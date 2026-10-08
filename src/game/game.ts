@@ -284,7 +284,9 @@ export class Game {
 
   private interact(): void {
     const pos = this.inVehicle ? this.carPosition : this.playerPosition
-    if (this.inVehicle) {
+    const target = this.missionTargets[this.missionStage]
+    const atTarget = pos.distanceTo(target) <= 4.5
+    if (this.inVehicle && !(this.missionStage === 'deliver' && atTarget)) {
       this.inVehicle = false
       this.playerGroup.visible = true
       this.playerPosition.set(this.carPosition.x + 1.8, this.groundY(this.carPosition.x + 1.8, this.carPosition.z) + 0.95, this.carPosition.z)
@@ -292,21 +294,20 @@ export class Game {
       this.audio.play('ui')
       return
     }
-    const target = this.missionTargets[this.missionStage]
-    if (pos.distanceTo(target) <= 4.5 && this.missionStage === 'idle') {
+    if (atTarget && this.missionStage === 'idle') {
       this.missionStage = 'pickup'
       this.setMissionMarker('mission', false)
       this.setMissionMarker('pickup', true)
       this.hooks.popup('任务已接收', this.project(target.clone().setY(2)), 'score')
       this.hooks.hint('cores')
       this.audio.play('pickup')
-    } else if (pos.distanceTo(target) <= 4.5 && this.missionStage === 'pickup') {
+    } else if (atTarget && this.missionStage === 'pickup') {
       this.missionStage = 'deliver'
       this.setMissionMarker('pickup', false)
       this.setMissionMarker('deliver', true)
       this.hooks.popup('货物已装车', this.project(target.clone().setY(2)), 'score')
       this.audio.play('pickup')
-    } else if (pos.distanceTo(target) <= 4.5 && this.missionStage === 'deliver') {
+    } else if (atTarget && this.missionStage === 'deliver') {
       this.missionStage = 'complete'
       this.setMissionMarker('deliver', false)
       this.setMissionMarker('complete', true)
@@ -379,7 +380,8 @@ export class Game {
     if (this.hudPrompt) {
       const pos = this.inVehicle ? this.carPosition : this.playerPosition
       let prompt = ''
-      if (this.inVehicle) prompt = 'E  下车'
+      if (this.inVehicle && this.missionStage === 'deliver' && pos.distanceTo(this.missionTargets.deliver) < 4.5) prompt = 'E  交付'
+      else if (this.inVehicle) prompt = 'E  下车'
       else if (this.missionStage !== 'complete' && pos.distanceTo(this.missionTargets[this.missionStage]) < 4.5) prompt = 'E  互动'
       else if (pos.distanceTo(this.carPosition) < 3.2) prompt = 'E  上车'
       this.hudPrompt.textContent = prompt
