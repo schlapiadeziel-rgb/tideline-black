@@ -488,8 +488,9 @@ export class Ui {
   <div class="hud-combo"><b data-slot="combo"></b><span data-i18n="hud.combo"></span><div class="hud-combo-bar"><i></i></div></div>
   <div class="banner"></div>
   <div class="hint"><span></span></div>
-  <div class="touch">
+    <div class="touch">
     <div class="touch-stick"><i></i></div>
+    <button class="touch-btn touch-interact" data-touch="interact"><span data-i18n="touch.interact"></span></button>
     <button class="touch-btn touch-dash" data-touch="dash"><span data-i18n="touch.dash"></span></button>
     <button class="touch-btn touch-jump" data-touch="jump"><span data-i18n="touch.jump"></span></button>
   </div>
@@ -526,9 +527,7 @@ export class Ui {
           <button data-nav data-value="low" data-i18n="settings.quality.low"></button><button data-nav data-value="medium" data-i18n="settings.quality.medium"></button><button data-nav data-value="high" data-i18n="settings.quality.high"></button>
         </div></div>
         ${toggle('reducedMotion', 'settings.reducedMotion')}
-        <div class="row"><span data-i18n="settings.language"></span><div class="seg" data-setting="locale">
-          <button data-nav data-value="en" lang="en">English</button><button data-nav data-value="zh-CN" lang="zh-CN">简体中文</button>
-        </div></div>
+        <div class="row"><span data-i18n="settings.language"></span><span class="fixed-language" data-i18n="settings.language.fixed"></span></div>
       </fieldset>
     </div>
     <nav class="menu menu-row"><button data-nav class="btn" data-action="back"><span data-i18n="menu.back"></span></button></nav>

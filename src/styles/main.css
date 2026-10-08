@@ -392,6 +392,7 @@ body.has-touch .hint.is-active { transform: translate(-50%, 0); }
 .touch-btn.is-down { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
 .touch-jump { right: calc(28px + var(--safe-r)); bottom: calc(34px + var(--safe-b)); width: 96px; height: 96px; background: var(--gold); }
 .touch-dash { right: calc(140px + var(--safe-r)); bottom: calc(40px + var(--safe-b)); width: 72px; height: 72px; background: var(--cyan); }
+.touch-interact { right: calc(44px + var(--safe-r)); bottom: calc(142px + var(--safe-b)); width: 74px; height: 74px; background: #ff9a69; }
 
 .fatal { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; font-weight: 700; }
 
@@ -417,4 +418,40 @@ body.has-touch .hint.is-active { transform: translate(-50%, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ─── TIDELINE BLACK open-world layer ─────────────────────────────────── */
+.screen-title .title-vignette {
+  background: linear-gradient(90deg, rgba(7, 18, 33, 0.94) 0%, rgba(10, 35, 55, 0.65) 38%, rgba(10, 35, 55, 0.08) 74%),
+    radial-gradient(75% 120% at 75% 42%, rgba(20, 179, 187, 0.22), transparent 60%),
+    linear-gradient(155deg, #10283f 0%, #0b1728 58%, #1b1730 100%);
+}
+.screen-title .logo-gem { color: #70e4d7; filter: drop-shadow(0 0 18px rgba(45, 235, 222, 0.72)) drop-shadow(4px 5px 0 var(--ink)); }
+.screen-title .logo-text { background: linear-gradient(180deg, #ecffff 0%, #70e4d7 43%, #ff916d 100%); -webkit-background-clip: text; background-clip: text; }
+.openworld-hud { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .25s ease; pointer-events: none; color: #effbff; font-family: var(--body); }
+.openworld-hud.is-visible { opacity: 1; visibility: visible; }
+.openworld-hud::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4, 15, 28, .48), transparent 20%, transparent 73%, rgba(4, 15, 28, .32)); pointer-events: none; }
+.location-chip, .vehicle-chip, .mission-card, .interaction-prompt { position: absolute; background: rgba(7, 19, 32, .72); border: 1px solid rgba(131, 230, 220, .28); box-shadow: 0 10px 30px rgba(0, 0, 0, .18), inset 0 0 24px rgba(52, 196, 194, .05); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.location-chip { top: 28px; left: 28px; padding: 10px 16px 11px; border-left: 3px solid #71e6d4; min-width: 150px; }
+.location-chip span, .vehicle-chip span, .mission-kicker { display: block; color: rgba(214, 248, 244, .62); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; }
+.location-chip strong { display: block; margin-top: 2px; font-size: 20px; letter-spacing: .07em; }
+.mission-card { top: 28px; right: 28px; width: min(340px, calc(100vw - 56px)); padding: 16px 18px 15px; border-top: 3px solid #ff9a69; }
+.mission-kicker { color: #ffb995; }
+.mission-title { display: block; margin-top: 6px; font-size: 21px; letter-spacing: .04em; }
+.mission-copy { margin: 6px 0 13px; color: rgba(239, 251, 255, .75); font-size: 13px; line-height: 1.5; }
+.mission-line { height: 4px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.mission-line i { display: block; width: 42%; height: 100%; background: linear-gradient(90deg, #ff8367, #ffd35c); box-shadow: 0 0 12px rgba(255, 131, 103, .7); }
+.vehicle-chip { left: 28px; bottom: 30px; padding: 11px 16px 10px; border-bottom: 2px solid #71e6d4; min-width: 122px; }
+.vehicle-chip strong { display: block; margin-top: 3px; color: #71e6d4; font-size: 18px; letter-spacing: .08em; }
+.interaction-prompt { left: 50%; bottom: 30px; transform: translateX(-50%) translateY(12px); padding: 10px 18px; border-color: rgba(255, 211, 92, .65); color: #ffd35c; font-weight: 800; letter-spacing: .08em; opacity: 0; transition: opacity .18s ease, transform .18s ease; }
+.interaction-prompt.is-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+.hud-compass { background: rgba(7, 19, 32, .52); border-color: rgba(113, 230, 212, .32); }
+.hud-score b, .hud-clock b { color: #71e6d4; }
+@media (max-width: 680px) {
+  .location-chip { top: 14px; left: 14px; }
+  .mission-card { top: 14px; right: 14px; width: min(260px, calc(100vw - 28px)); padding: 12px; }
+  .mission-title { font-size: 17px; }
+  .mission-copy { font-size: 11px; margin-bottom: 8px; }
+  .vehicle-chip { left: 14px; bottom: 14px; }
+  .interaction-prompt { bottom: 14px; }
 }

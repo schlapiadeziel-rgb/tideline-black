@@ -1,6 +1,6 @@
 import './styles/main.css'
 import { Audio } from './engine/audio'
-import { I18n, resolveLocale } from './engine/i18n'
+import { I18n } from './engine/i18n'
 import { Input } from './engine/input'
 import { GameLoop } from './engine/loop'
 import { SAVE_KEY, SaveStore, type SaveData } from './engine/save'
@@ -13,7 +13,8 @@ async function boot(): Promise<void> {
   const firstRun = safeGet(SAVE_KEY) === null
   const save = new SaveStore()
 
-  const i18n = new I18n(resolveLocale(save.data.locale, navigator.languages))
+  // The game blueprint pins the content language to Simplified Chinese.
+  const i18n = new I18n('zh-CN')
   const input = new Input(canvas)
   const audio = new Audio()
   let game: Game | undefined
