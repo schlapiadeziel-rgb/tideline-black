@@ -568,6 +568,15 @@ export class Game {
           windows.position.set(x, h * row, z - w / 2 - 0.06)
           this.scene.add(windows)
         }
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 0.16, w * 0.86), new THREE.MeshStandardMaterial({ color: '#1a2945', metalness: 0.28, roughness: 0.56 }))
+        roof.position.set(x, h + 0.24, z)
+        this.scene.add(roof)
+        const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.06, 1.1, 6), new THREE.MeshStandardMaterial({ color: '#aec4d1', metalness: 0.6, roughness: 0.3 }))
+        antenna.position.set(x + w * 0.22, h + 0.82, z + w * 0.16)
+        this.scene.add(antenna)
+        const shop = new THREE.Mesh(new THREE.BoxGeometry(w * 0.72, 0.16, 0.08), new THREE.MeshStandardMaterial({ color: index % 2 ? COLORS.pink : COLORS.gold, emissive: index % 2 ? COLORS.pink : COLORS.gold, emissiveIntensity: 1.8 }))
+        shop.position.set(x, 0.95, z - w / 2 - 0.08)
+        this.scene.add(shop)
         index += 1
       }
     }
@@ -704,17 +713,41 @@ export class Game {
 
   private buildPlayer(): THREE.Group {
     const root = new THREE.Group()
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.36, 0.75, 5, 10), new THREE.MeshStandardMaterial({ color: '#eb806d', roughness: 0.65 }))
+    const skin = new THREE.MeshStandardMaterial({ color: '#e9a078', roughness: 0.7 })
+    const jacketMaterial = new THREE.MeshStandardMaterial({ color: '#203b67', roughness: 0.75 })
+    const accent = new THREE.MeshStandardMaterial({ color: COLORS.coral, emissive: '#702d4d', emissiveIntensity: 0.55, roughness: 0.45 })
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.36, 0.75, 5, 10), skin)
     body.position.y = 0.82
     body.castShadow = true
-    const jacket = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.5, 0.35), new THREE.MeshStandardMaterial({ color: '#182b43', roughness: 0.8 }))
+    const jacket = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.56, 0.42), jacketMaterial)
     jacket.position.y = 0.68
     jacket.castShadow = true
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.27, 12, 8), new THREE.MeshStandardMaterial({ color: '#c77961', roughness: 0.75 }))
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.29, 12, 8), skin)
     head.position.y = 1.55
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 12), new THREE.MeshStandardMaterial({ color: COLORS.gold }))
-    cap.position.y = 1.79
-    root.add(body, jacket, head, cap)
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 7), new THREE.MeshStandardMaterial({ color: '#101a36', roughness: 0.72 }))
+    hair.scale.set(1, 0.62, 1)
+    hair.position.set(0, 1.73, -0.02)
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 5), new THREE.MeshBasicMaterial({ color: '#f8fbff' }))
+    eye.position.set(-0.105, 1.58, 0.26)
+    const eye2 = eye.clone()
+    eye2.position.x = 0.105
+    const scarf = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.12, 0.46), accent)
+    scarf.position.set(0, 1.13, 0)
+    const armL = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.42, 4, 7), jacketMaterial)
+    armL.position.set(-0.43, 0.82, 0)
+    armL.rotation.z = -0.16
+    const armR = armL.clone()
+    armR.position.x = 0.43
+    armR.rotation.z = 0.16
+    const legL = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.38, 4, 7), new THREE.MeshStandardMaterial({ color: '#182543', roughness: 0.82 }))
+    legL.position.set(-0.18, 0.31, 0)
+    const legR = legL.clone()
+    legR.position.x = 0.18
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.16, 0.46), new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.68 }))
+    shoe.position.set(-0.18, 0.08, 0.1)
+    const shoe2 = shoe.clone()
+    shoe2.position.x = 0.18
+    root.add(body, jacket, head, hair, eye, eye2, scarf, armL, armR, legL, legR, shoe, shoe2)
     return root
   }
 
@@ -736,7 +769,15 @@ export class Game {
     }
     const light = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.12, 0.08), new THREE.MeshStandardMaterial({ color: COLORS.gold, emissive: '#ffd35c', emissiveIntensity: 1.8 }))
     light.position.set(0, 0.76, -2.1)
-    car.add(light)
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.1, 0.08), new THREE.MeshStandardMaterial({ color: COLORS.coral, emissive: '#ff3d55', emissiveIntensity: 1.5 }))
+    tail.position.set(0, 0.76, 2.1)
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.25, 0.08, 2.5), new THREE.MeshStandardMaterial({ color: COLORS.gold, emissive: '#8b5520', emissiveIntensity: 0.35 }))
+    stripe.position.set(0, 0.94, 0.35)
+    const bumper = new THREE.Mesh(new THREE.BoxGeometry(2.28, 0.16, 0.22), new THREE.MeshStandardMaterial({ color: '#202b3a', metalness: 0.55, roughness: 0.3 }))
+    bumper.position.set(0, 0.42, -2.06)
+    const spoiler = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.1, 0.28), new THREE.MeshStandardMaterial({ color: '#202b3a', metalness: 0.45, roughness: 0.32 }))
+    spoiler.position.set(0, 1.34, 1.55)
+    car.add(light, tail, stripe, bumper, spoiler)
     return car
   }
 
