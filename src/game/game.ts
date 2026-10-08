@@ -124,6 +124,7 @@ export class Game {
     this.scene.add(this.playerGroup)
     this.buildMarkers()
     this.buildNpcs()
+    this.applyAnimeStyle()
     this.ensureCustomHud()
     this.updateCamera(0)
   }
@@ -237,6 +238,26 @@ export class Game {
     this.skyColor.copy(this.dawnSky).lerp(this.daySky, warmth)
     this.scene.background = this.skyColor
     if (this.scene.fog instanceof THREE.Fog) this.scene.fog.color.copy(this.skyColor)
+  }
+
+  private applyAnimeStyle(): void {
+    this.scene.traverse(object => {
+      if (!(object instanceof THREE.Mesh)) return
+      const materials = Array.isArray(object.material) ? object.material : [object.material]
+      for (const material of materials) {
+        if ('flatShading' in material) {
+          material.flatShading = true
+          material.needsUpdate = true
+        }
+        if ('color' in material) {
+          const color = (material as THREE.MeshStandardMaterial).color
+          const hsl = { h: 0, s: 0, l: 0 }
+          color.getHSL(hsl)
+          color.setHSL(hsl.h, Math.min(1, hsl.s * 1.28 + 0.06), Math.min(0.78, hsl.l * 1.08))
+        }
+        if ('roughness' in material) (material as THREE.MeshStandardMaterial).roughness = 0.72
+      }
+    })
   }
 
   compass(): Compass | null {
