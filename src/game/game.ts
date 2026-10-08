@@ -45,6 +45,11 @@ export class Game {
   reducedMotion = false
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.1, 400)
+  private readonly sun = new THREE.DirectionalLight('#ffe9ba', 3.2)
+  private readonly hemi = new THREE.HemisphereLight('#c9f5ff', '#172334', 1.65)
+  private readonly dawnSky = new THREE.Color('#071b35')
+  private readonly daySky = new THREE.Color('#1b6381')
+  private readonly skyColor = new THREE.Color()
   private readonly playerGroup = new THREE.Group()
   readonly player = {
     root: this.playerGroup,
@@ -100,16 +105,15 @@ export class Game {
   ) {
     this.scene.background = new THREE.Color('#0b263e')
     this.scene.fog = new THREE.Fog('#0b263e', 55, 180)
-    this.scene.add(new THREE.HemisphereLight('#c9f5ff', '#172334', 1.65))
-    const sun = new THREE.DirectionalLight('#ffe9ba', 3.2)
-    sun.position.set(-25, 50, 20)
-    sun.castShadow = true
-    sun.shadow.mapSize.set(renderer.shadowMapSize, renderer.shadowMapSize)
-    sun.shadow.camera.left = -70
-    sun.shadow.camera.right = 70
-    sun.shadow.camera.top = 70
-    sun.shadow.camera.bottom = -70
-    this.scene.add(sun)
+    this.scene.add(this.hemi)
+    this.sun.position.set(-25, 50, 20)
+    this.sun.castShadow = true
+    this.sun.shadow.mapSize.set(renderer.shadowMapSize, renderer.shadowMapSize)
+    this.sun.shadow.camera.left = -70
+    this.sun.shadow.camera.right = 70
+    this.sun.shadow.camera.top = 70
+    this.sun.shadow.camera.bottom = -70
+    this.scene.add(this.sun)
 
     this.buildIsland()
     this.car = this.buildCar()
@@ -206,6 +210,7 @@ export class Game {
 
   render(_alpha: number, frameSeconds: number): void {
     this.time += frameSeconds
+    this.updateAtmosphere()
     if (this.mode === 'attract') {
       const t = this.time * 0.055
       this.camera.position.set(Math.sin(t) * 82, 40 + Math.sin(t * 0.7) * 4, Math.cos(t) * 82)
@@ -219,6 +224,19 @@ export class Game {
       this.updateCamera(frameSeconds)
     }
     this.renderer.render(this.scene, this.camera)
+  }
+
+  private updateAtmosphere(): void {
+    const cycle = (Math.sin(this.time * 0.035 - 0.65) + 1) * 0.5
+    const warmth = THREE.MathUtils.smoothstep(cycle, 0, 1)
+    this.sun.intensity = 2.25 + warmth * 1.25
+    this.sun.position.set(-28 + cycle * 36, 34 + warmth * 28, 18 - cycle * 20)
+    this.sun.color.setHSL(0.095 - cycle * 0.035, 0.62, 0.78)
+    this.hemi.intensity = 1.25 + warmth * 0.55
+    this.hemi.color.setHSL(0.55, 0.55, 0.72 + warmth * 0.08)
+    this.skyColor.copy(this.dawnSky).lerp(this.daySky, warmth)
+    this.scene.background = this.skyColor
+    if (this.scene.fog instanceof THREE.Fog) this.scene.fog.color.copy(this.skyColor)
   }
 
   compass(): Compass | null {
