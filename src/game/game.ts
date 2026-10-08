@@ -20,6 +20,7 @@ export type GameHooks = {
 
 type MissionStage = 'idle' | 'pickup' | 'deliver' | 'complete'
 type Npc = { root: THREE.Group; phase: number; base: THREE.Vector3; speed: number }
+type Traffic = { root: THREE.Group; axis: 'x' | 'z'; lane: number; progress: number; speed: number; direction: 1 | -1 }
 
 const COLORS = {
   ink: '#101522',
@@ -61,6 +62,7 @@ export class Game {
   private readonly car: THREE.Group
   private readonly markerGroups = new Map<MissionStage | 'mission', THREE.Group>()
   private readonly npcs: Npc[] = []
+  private readonly traffic: Traffic[] = []
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
   private readonly carPosition = new THREE.Vector3(13, 0.48, 11)
@@ -111,6 +113,7 @@ export class Game {
     this.buildIsland()
     this.car = this.buildCar()
     this.scene.add(this.car)
+    this.buildTraffic()
     this.playerBody = this.buildPlayer()
     this.playerGroup.add(this.playerBody)
     this.scene.add(this.playerGroup)
@@ -362,6 +365,21 @@ export class Game {
     this.car.children.forEach(child => {
       if (child.userData.wheel) child.rotation.x -= this.carVelocity.length() * dt * 2.2
     })
+    for (const traffic of this.traffic) {
+      traffic.progress += dt * traffic.speed * traffic.direction
+      const span = 92
+      const position = ((traffic.progress + span / 2) % span + span) % span - span / 2
+      if (traffic.axis === 'x') {
+        traffic.root.position.set(position, this.groundY(position, traffic.lane) + 0.48, traffic.lane)
+        traffic.root.rotation.y = traffic.direction > 0 ? Math.PI / 2 : -Math.PI / 2
+      } else {
+        traffic.root.position.set(traffic.lane, this.groundY(traffic.lane, position) + 0.48, position)
+        traffic.root.rotation.y = traffic.direction > 0 ? 0 : Math.PI
+      }
+      traffic.root.children.forEach(child => {
+        if (child.userData.wheel) child.rotation.x -= traffic.speed * dt * 2.2
+      })
+    }
     this.playerBody.rotation.z = Math.sin(this.time * 8) * Math.min(0.05, this.playerVelocity.length() * 0.006)
   }
 
@@ -375,6 +393,9 @@ export class Game {
     }
     if (this.hudMission) this.hudMission.textContent = labels[this.missionStage][0]
     if (this.hudCopy) this.hudCopy.textContent = labels[this.missionStage][1]
+    const progress = { idle: '16%', pickup: '42%', deliver: '74%', complete: '100%' }[this.missionStage]
+    const progressBar = this.customHud.querySelector<HTMLElement>('.mission-line i')
+    if (progressBar) progressBar.style.width = progress
     if (this.hudLocation) this.hudLocation.textContent = this.locationName()
     if (this.hudSpeed) this.hudSpeed.textContent = this.inVehicle ? `${this.car.userData.speed ?? 0} KM/H` : '步行'
     if (this.hudPrompt) {
@@ -634,9 +655,9 @@ export class Game {
     return root
   }
 
-  private buildCar(): THREE.Group {
+  private buildCar(color = '#d84f59'): THREE.Group {
     const car = new THREE.Group()
-    const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.62, 4.2), new THREE.MeshStandardMaterial({ color: '#d84f59', metalness: 0.35, roughness: 0.32 }))
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.62, 4.2), new THREE.MeshStandardMaterial({ color, metalness: 0.35, roughness: 0.32 }))
     body.position.y = 0.62
     body.castShadow = true
     const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.62, 1.9), new THREE.MeshStandardMaterial({ color: '#15263b', metalness: 0.2, roughness: 0.25 }))
@@ -700,6 +721,21 @@ export class Game {
       this.scene.add(root)
       this.npcs.push({ root, base, phase: index * 0.8, speed: 0.55 + (index % 3) * 0.18 })
     })
+  }
+
+  private buildTraffic(): void {
+    const routes: Array<[Traffic['axis'], number, number, number, Traffic['direction'], string]> = [
+      ['x', 1.25, -28, 4.8, 1, '#2bd0c0'],
+      ['x', -1.25, 18, 5.4, -1, '#f08b52'],
+      ['z', 1.25, -36, 4.2, 1, '#738bff'],
+      ['z', -1.25, 24, 5.1, -1, '#d95f8c'],
+    ]
+    for (const [axis, lane, progress, speed, direction, color] of routes) {
+      const root = this.buildCar(color)
+      root.position.y = 0.48
+      this.scene.add(root)
+      this.traffic.push({ root, axis, lane, progress, speed, direction })
+    }
   }
 
   private groundY(x: number, z: number): number {
