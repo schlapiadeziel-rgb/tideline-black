@@ -30,6 +30,8 @@ const GLYPH = {
   gamepad: { keys: '<kbd class="round">L</kbd>', stickR: '<kbd class="round">R</kbd>', jump: '<kbd class="round a">A</kbd>', dash: '<kbd class="round x">X</kbd>', select: '<kbd class="round a">A</kbd>', back: '<kbd class="round b">B</kbd>' },
 }
 
+const LATEST_APK_URL = 'https://github.com/schlapiadeziel-rgb/tideline-black/releases/latest/download/tideline-black-latest.apk'
+
 /**
  * DOM game UI: title, HUD, pause, settings, results and leaderboard as HTML/CSS layered over the
  * canvas. Every screen is keyboard-, gamepad- and touch-navigable; text comes from i18n keys and
@@ -314,10 +316,22 @@ export class Ui {
       case 'quit': this.actions.quit(); break
       case 'settings': this.push('settings'); break
       case 'leaderboard': this.push('leaderboard'); break
+      case 'update': this.openUpdate(); break
       case 'back': this.back(); break
       case 'save-score': this.saveScore(); break
       case 'pause': window.dispatchEvent(new CustomEvent('game:pause')); break
     }
+  }
+
+  private openUpdate(): void {
+    const link = document.createElement('a')
+    link.href = LATEST_APK_URL
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    link.download = 'tideline-black-latest.apk'
+    document.body.append(link)
+    link.click()
+    link.remove()
   }
 
   private onInput(e: Event): void {
@@ -465,6 +479,7 @@ export class Ui {
       <button data-nav class="btn btn-primary" data-action="play"><span data-i18n="menu.play"></span></button>
       <button data-nav class="btn" data-action="leaderboard"><span data-i18n="menu.leaderboard"></span></button>
       <button data-nav class="btn" data-action="settings"><span data-i18n="menu.settings"></span></button>
+      <button data-nav class="btn btn-update" data-action="update"><span data-i18n="menu.update"></span></button>
     </nav>
   </div>
   <footer class="bottom-bar"><div class="prompts"></div><small data-i18n="credits.fonts"></small></footer>
@@ -503,6 +518,7 @@ export class Ui {
       <button data-nav class="btn btn-primary" data-action="resume"><span data-i18n="menu.continue"></span></button>
       <button data-nav class="btn" data-action="restart"><span data-i18n="menu.restart"></span></button>
       <button data-nav class="btn" data-action="settings"><span data-i18n="menu.settings"></span></button>
+      <button data-nav class="btn btn-update" data-action="update"><span data-i18n="menu.update"></span></button>
       <button data-nav class="btn" data-action="quit"><span data-i18n="menu.quit"></span></button>
     </nav>
   </div>

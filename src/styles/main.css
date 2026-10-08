@@ -140,6 +140,8 @@ button { font: inherit; color: inherit; }
 .btn:active { transform: translateX(8px) scale(0.98); }
 .btn-primary::after { border-color: var(--gold); }
 .btn-primary { color: var(--gold); }
+.btn-update { color: var(--cyan); }
+.btn-update::after { border-color: rgba(126, 249, 255, .55); }
 .btn-small { min-width: 0; padding: 10px 20px; font-size: 16px; }
 .menu-row .btn { min-width: 200px; text-align: center; }
 .menu-row .btn span { justify-content: center; }
