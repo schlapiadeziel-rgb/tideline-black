@@ -63,6 +63,7 @@ export class Game {
   private readonly markerGroups = new Map<MissionStage | 'mission', THREE.Group>()
   private readonly npcs: Npc[] = []
   private readonly traffic: Traffic[] = []
+  private readonly waterRipples: THREE.Mesh[] = []
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
   private readonly carPosition = new THREE.Vector3(13, 0.48, 11)
@@ -380,6 +381,12 @@ export class Game {
         if (child.userData.wheel) child.rotation.x -= traffic.speed * dt * 2.2
       })
     }
+    for (const ripple of this.waterRipples) {
+      const phase = ripple.userData.phase ?? 0
+      const pulse = 1 + Math.sin(this.time * 0.9 + phase) * 0.18
+      ripple.scale.set(1.8 * pulse, 0.62 * pulse, 1)
+      ;(ripple.material as THREE.MeshBasicMaterial).opacity = 0.12 + (Math.sin(this.time * 0.9 + phase) + 1) * 0.04
+    }
     this.playerBody.rotation.z = Math.sin(this.time * 8) * Math.min(0.05, this.playerVelocity.length() * 0.006)
   }
 
@@ -449,6 +456,17 @@ export class Game {
     water.position.y = -1.55
     water.receiveShadow = true
     this.scene.add(water)
+    for (let i = 0; i < 12; i += 1) {
+      const ripple = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.76, 24), new THREE.MeshBasicMaterial({ color: COLORS.oceanGlow, transparent: true, opacity: 0.16, side: THREE.DoubleSide }))
+      const angle = (i / 12) * Math.PI * 2
+      const radius = 20 + (i % 4) * 9
+      ripple.rotation.x = -Math.PI / 2
+      ripple.position.set(Math.cos(angle) * radius, -1.48, Math.sin(angle) * radius)
+      ripple.scale.set(1.8, 0.62, 1)
+      ripple.userData.phase = i * 0.73
+      this.waterRipples.push(ripple)
+      this.scene.add(ripple)
+    }
     const island = new THREE.Mesh(new THREE.CylinderGeometry(58, 63, 1.8, 64), new THREE.MeshStandardMaterial({ color: '#355f53', roughness: 0.94 }))
     island.position.y = -0.9
     island.receiveShadow = true
@@ -490,6 +508,7 @@ export class Game {
 
   private addCity(): void {
     const palette = ['#37445e', '#465a72', '#725b67', '#315b67', '#4d536d']
+    const windowMaterial = new THREE.MeshStandardMaterial({ color: '#ffcf72', emissive: '#e98b4a', emissiveIntensity: 1.2, roughness: 0.35 })
     let index = 0
     for (let x = -22; x <= 22; x += 6) {
       for (let z = -12; z <= 12; z += 6) {
@@ -505,6 +524,11 @@ export class Game {
         const sign = new THREE.Mesh(new THREE.BoxGeometry(w * 0.82, 0.28, 0.05), new THREE.MeshStandardMaterial({ color: COLORS.cityLight, emissive: COLORS.cityLight, emissiveIntensity: 1.7 }))
         sign.position.set(x, h * 0.56, z - w / 2 - 0.03)
         this.scene.add(sign)
+        for (const row of [0.34, 0.58]) {
+          const windows = new THREE.Mesh(new THREE.BoxGeometry(w * 0.68, 0.12, 0.04), windowMaterial)
+          windows.position.set(x, h * row, z - w / 2 - 0.06)
+          this.scene.add(windows)
+        }
         index += 1
       }
     }
