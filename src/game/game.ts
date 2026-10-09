@@ -66,6 +66,7 @@ export class Game {
   private readonly playerBody: THREE.Group
   private readonly car: THREE.Group
   private readonly markerGroups = new Map<MissionStage | 'mission', THREE.Group>()
+  private readonly routeGuides = new THREE.Group()
   private readonly npcs: Npc[] = []
   private readonly traffic: Traffic[] = []
   private readonly waterRipples: THREE.Mesh[] = []
@@ -123,6 +124,7 @@ export class Game {
     this.playerGroup.add(this.playerBody)
     this.scene.add(this.playerGroup)
     this.buildMarkers()
+    this.buildRouteGuides()
     this.buildNpcs()
     this.applyAnimeStyle()
     this.ensureCustomHud()
@@ -429,6 +431,7 @@ export class Game {
       ripple.scale.set(1.8 * pulse, 0.62 * pulse, 1)
       ;(ripple.material as THREE.MeshBasicMaterial).opacity = 0.12 + (Math.sin(this.time * 0.9 + phase) + 1) * 0.04
     }
+    this.updateRouteGuides()
     this.playerBody.rotation.z = Math.sin(this.time * 8) * Math.min(0.05, this.playerVelocity.length() * 0.006)
   }
 
@@ -828,6 +831,43 @@ export class Game {
     this.markerGroups.get('pickup')!.visible = false
     this.markerGroups.get('deliver')!.visible = false
     this.markerGroups.get('complete')!.visible = false
+  }
+
+  private buildRouteGuides(): void {
+    const material = new THREE.MeshStandardMaterial({ color: COLORS.gold, emissive: COLORS.gold, emissiveIntensity: 2.2, transparent: true, opacity: 0.82 })
+    for (let i = 0; i < 10; i += 1) {
+      const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.62, 4), material.clone())
+      arrow.userData.routeIndex = i
+      this.routeGuides.add(arrow)
+    }
+    this.routeGuides.visible = false
+    this.scene.add(this.routeGuides)
+  }
+
+  private updateRouteGuides(): void {
+    if (this.missionStage === 'complete') {
+      this.routeGuides.visible = false
+      return
+    }
+    const target = this.missionTargets[this.missionStage]
+    const origin = this.inVehicle ? this.carPosition : this.playerPosition
+    const delta = new THREE.Vector3(target.x - origin.x, 0, target.z - origin.z)
+    const distance = delta.length()
+    if (distance < 5) {
+      this.routeGuides.visible = false
+      return
+    }
+    this.routeGuides.visible = true
+    const direction = delta.normalize()
+    const spacing = Math.min(6.5, Math.max(3.2, distance / 8))
+    for (const arrow of this.routeGuides.children) {
+      const index = arrow.userData.routeIndex as number
+      const offset = Math.min(distance - 2, 4 + index * spacing)
+      arrow.position.set(origin.x + direction.x * offset, 0.22, origin.z + direction.z * offset)
+      arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction)
+      arrow.visible = offset < distance - 1
+      arrow.scale.setScalar(0.86 + Math.sin(this.time * 4 + index) * 0.08)
+    }
   }
 
   private setMissionMarker(key: MissionStage | 'mission', visible: boolean): void {
