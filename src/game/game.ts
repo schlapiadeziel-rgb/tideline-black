@@ -325,6 +325,11 @@ export class Game {
     this.clampToIsland(this.carPosition)
     this.carPosition.y = this.groundY(this.carPosition.x, this.carPosition.z) + 0.48
     this.car.position.copy(this.carPosition)
+    this.car.children.forEach(child => {
+      if (!child.userData.wheel) return
+      if (child.userData.frontWheel) child.rotation.y = move.x * 0.24
+      child.rotation.x -= this.carVelocity.length() * dt * 2.4 * (move.y < 0 ? -1 : 1)
+    })
     this.car.userData.speed = Math.round(this.carVelocity.length() * 3.6)
   }
 
@@ -821,6 +826,7 @@ export class Game {
       wheel.rotation.z = Math.PI / 2
       wheel.position.set(x, 0.38, z)
       wheel.userData.wheel = true
+      wheel.userData.frontWheel = z < 0
       car.add(wheel)
     }
     const light = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.12, 0.08), new THREE.MeshStandardMaterial({ color: COLORS.gold, emissive: '#ffd35c', emissiveIntensity: 1.8 }))
