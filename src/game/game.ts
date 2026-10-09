@@ -315,7 +315,8 @@ export class Game {
     const move = this.input.move
     const steer = move.x * dt * (Math.abs(move.y) > 0.05 ? Math.sign(move.y) : 1) * 1.7
     this.car.rotation.y += steer
-    const direction = new THREE.Vector3(Math.sin(this.car.rotation.y), 0, Math.cos(this.car.rotation.y))
+    // 车辆模型车头、前灯和尾翼约定为本地 Z 负方向；驾驶向量必须与车头一致。
+    const direction = new THREE.Vector3(Math.sin(this.car.rotation.y), 0, -Math.cos(this.car.rotation.y))
     const desired = direction.multiplyScalar(move.y * 18)
     this.carVelocity.x = THREE.MathUtils.damp(this.carVelocity.x, desired.x, 4.5, dt)
     this.carVelocity.z = THREE.MathUtils.damp(this.carVelocity.z, desired.z, 4.5, dt)
@@ -459,7 +460,10 @@ export class Game {
     const progressBar = this.customHud.querySelector<HTMLElement>('.mission-line i')
     if (progressBar) progressBar.style.width = progress
     if (this.hudLocation) this.hudLocation.textContent = this.locationName()
-    if (this.hudSpeed) this.hudSpeed.textContent = this.inVehicle ? `${this.car.userData.speed ?? 0} KM/H` : '步行'
+    const speedValue = this.inVehicle ? this.carVelocity.length() : 0
+    if (this.hudSpeed) this.hudSpeed.textContent = this.inVehicle ? `${Math.round(speedValue * 6)} KM/H` : '步行'
+    this.customHud.classList.toggle('is-driving-fast', this.inVehicle && speedValue > 7)
+    this.customHud.style.setProperty('--speed-level', `${Math.min(1, speedValue / 18)}`)
     const position = this.inVehicle ? this.carPosition : this.playerPosition
     const target = this.missionTargets[this.missionStage]
     const dx = target.x - position.x
