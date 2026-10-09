@@ -70,6 +70,7 @@ export class Game {
   private readonly npcs: Npc[] = []
   private readonly traffic: Traffic[] = []
   private readonly waterRipples: THREE.Mesh[] = []
+  private readonly plazaRipples: THREE.Mesh[] = []
   private rainDrops?: THREE.LineSegments
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
@@ -450,6 +451,12 @@ export class Game {
       ripple.scale.set(1.8 * pulse, 0.62 * pulse, 1)
       ;(ripple.material as THREE.MeshBasicMaterial).opacity = 0.12 + (Math.sin(this.time * 0.9 + phase) + 1) * 0.04
     }
+    for (const ripple of this.plazaRipples) {
+      const phase = ripple.userData.phase ?? 0
+      const pulse = (Math.sin(this.time * 1.8 + phase) + 1) * 0.5
+      ripple.scale.setScalar(0.72 + pulse * 0.7)
+      ;(ripple.material as THREE.MeshBasicMaterial).opacity = 0.08 + (1 - pulse) * 0.16
+    }
     if (this.rainDrops) {
       const target = this.inVehicle ? this.carPosition : this.playerPosition
       this.rainDrops.position.set(target.x, this.groundY(target.x, target.z), target.z)
@@ -752,6 +759,12 @@ export class Game {
       puddle.scale.x = 1.8
       puddle.position.set(-9 + i * 4.5, 0.18, -0.8 + (i % 2) * 2.4)
       plaza.add(puddle)
+      const ripple = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.34, 18), new THREE.MeshBasicMaterial({ color: '#8be8ef', transparent: true, opacity: 0.16, side: THREE.DoubleSide }))
+      ripple.rotation.x = -Math.PI / 2
+      ripple.position.copy(puddle.position).setY(0.21)
+      ripple.userData.phase = i * 0.9
+      plaza.add(ripple)
+      this.plazaRipples.push(ripple)
     }
     const railMaterial = new THREE.MeshStandardMaterial({ color: '#182b43', metalness: 0.72, roughness: 0.24 })
     for (let i = 0; i < 9; i += 1) {
