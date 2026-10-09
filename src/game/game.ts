@@ -790,6 +790,35 @@ export class Game {
       boat.add(hull, mast, sail)
       plaza.add(boat)
     }
+    const palmTrunk = new THREE.MeshStandardMaterial({ color: '#8d5f44', roughness: 0.88 })
+    const palmLeaf = new THREE.MeshStandardMaterial({ color: '#4c9d74', emissive: '#143e3c', emissiveIntensity: 0.25, roughness: 0.82 })
+    for (const x of [-11, 11]) {
+      const palm = new THREE.Group()
+      palm.position.set(x, 0, -0.5)
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.28, 3.8, 7), palmTrunk)
+      trunk.position.y = 1.9
+      palm.add(trunk)
+      for (let leafIndex = 0; leafIndex < 6; leafIndex += 1) {
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 2.3), palmLeaf)
+        leaf.position.y = 4
+        leaf.rotation.y = leafIndex * Math.PI / 3
+        leaf.rotation.x = -0.22 + (leafIndex % 2) * 0.14
+        palm.add(leaf)
+      }
+      plaza.add(palm)
+    }
+    const benchMaterial = new THREE.MeshStandardMaterial({ color: '#9d6a4d', roughness: 0.72 })
+    for (let i = 0; i < 3; i += 1) {
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.16, 0.48), benchMaterial)
+      bench.position.set(-6 + i * 6, 0.72, 2.2)
+      plaza.add(bench)
+      const legs = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.7, 0.16), railMaterial)
+      legs.position.set(-6 + i * 6, 0.36, 2.2)
+      plaza.add(legs)
+    }
+    const waterline = new THREE.Mesh(new THREE.BoxGeometry(25, 0.06, 0.12), new THREE.MeshStandardMaterial({ color: '#55e6ea', emissive: '#0ba2b4', emissiveIntensity: 2.5 }))
+    waterline.position.set(0, 0.32, 3.9)
+    plaza.add(waterline)
     const sign = new THREE.Mesh(new THREE.BoxGeometry(7, 0.42, 0.08), new THREE.MeshStandardMaterial({ color: COLORS.coral, emissive: '#8b2b4d', emissiveIntensity: 1.2 }))
     sign.position.set(0, 3.1, -2.7)
     plaza.add(sign)
