@@ -580,6 +580,7 @@ export class Game {
     this.addRoad(18, -18, 3.8, 56, -0.8)
     this.addStreetFurniture()
     this.addCity()
+    this.addOceanariumLandmark()
     this.addHarbor()
     this.addBeach()
     this.addAirport()
@@ -690,6 +691,49 @@ export class Game {
         index += 1
       }
     }
+  }
+
+  private addOceanariumLandmark(): void {
+    const landmark = new THREE.Group()
+    landmark.position.set(0, 0, -18)
+    const wallMaterial = new THREE.MeshStandardMaterial({ color: '#304a68', roughness: 0.42, metalness: 0.28 })
+    const glassMaterial = new THREE.MeshStandardMaterial({ color: '#63e8ee', emissive: '#087b96', emissiveIntensity: 1.8, transparent: true, opacity: 0.82, metalness: 0.35, roughness: 0.16 })
+    const trimMaterial = new THREE.MeshStandardMaterial({ color: COLORS.gold, emissive: '#7a4b16', emissiveIntensity: 0.7, metalness: 0.5, roughness: 0.28 })
+    const baseGeometry = new THREE.BoxGeometry(18, 4.6, 7)
+    const base = new THREE.Mesh(baseGeometry, wallMaterial)
+    base.position.y = 2.3
+    base.castShadow = true
+    base.receiveShadow = true
+    landmark.add(base)
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(7.2, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), glassMaterial)
+    dome.scale.set(1.28, 0.78, 0.55)
+    dome.position.set(0, 5.2, 0)
+    dome.castShadow = true
+    landmark.add(dome)
+    const entrance = new THREE.Mesh(new THREE.TorusGeometry(2.3, 0.28, 8, 24, Math.PI), trimMaterial)
+    entrance.rotation.z = Math.PI
+    entrance.position.set(0, 1.8, -3.58)
+    landmark.add(entrance)
+    for (const x of [-7.3, 7.3]) {
+      const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 5.4, 0.55), trimMaterial)
+      pillar.position.set(x, 2.7, -3.55)
+      landmark.add(pillar)
+    }
+    const banner = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.9, 0.08), new THREE.MeshStandardMaterial({ color: COLORS.coral, emissive: '#7d2948', emissiveIntensity: 1.2 }))
+    banner.position.set(0, 4.3, -3.62)
+    landmark.add(banner)
+    const logo = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.12, 6, 18), new THREE.MeshBasicMaterial({ color: '#d9ffff' }))
+    logo.scale.set(1.6, 0.55, 1)
+    logo.position.set(0, 6.05, -0.1)
+    landmark.add(logo)
+    const outline = new THREE.LineSegments(new THREE.EdgesGeometry(baseGeometry), new THREE.LineBasicMaterial({ color: '#17233f', transparent: true, opacity: 0.7 }))
+    outline.position.set(0, 2.3, 0)
+    outline.scale.setScalar(1.006)
+    landmark.add(outline)
+    const flood = new THREE.PointLight('#5be9ff', 1.8, 18, 1.7)
+    flood.position.set(0, 4.6, -4.6)
+    landmark.add(flood)
+    this.scene.add(landmark)
   }
 
   private addHarbor(): void {
