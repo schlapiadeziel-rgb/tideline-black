@@ -395,6 +395,9 @@ export class Game {
       npc.phase += dt * npc.speed
       npc.root.position.y = npc.base.y + Math.sin(npc.phase) * 0.06
       npc.root.rotation.y += dt * 0.18
+      for (const child of npc.root.children) {
+        if (typeof child.userData.limbPhase === 'number') child.rotation.z = Math.sin(npc.phase * 2.2 + child.userData.limbPhase) * 0.3
+      }
     }
     for (const marker of this.markerGroups.values()) {
       if (!marker.visible) continue
@@ -521,6 +524,7 @@ export class Game {
     this.addRoad(0, 18, 72, 3.8, 0)
     this.addRoad(-20, -20, 3.8, 55, 0.3)
     this.addRoad(18, -18, 3.8, 56, -0.8)
+    this.addStreetFurniture()
     this.addCity()
     this.addHarbor()
     this.addBeach()
@@ -543,6 +547,28 @@ export class Game {
     line.position.set(x, 0.15, z)
     line.rotation.y = rotation
     this.scene.add(line)
+    const curb = new THREE.Mesh(new THREE.BoxGeometry(Math.max(width * 0.04, 0.12), 0.08, depth * 0.9), new THREE.MeshStandardMaterial({ color: '#6e8491', roughness: 0.72 }))
+    curb.position.set(x - Math.max(width * 0.42, 0.6), 0.16, z)
+    curb.rotation.y = rotation
+    this.scene.add(curb)
+  }
+
+  private addStreetFurniture(): void {
+    const spots: Array<[number, number]> = [[-8, -18], [8, -18], [-16, 2], [16, 2], [-27, -9], [27, -9], [-8, 18], [8, 18]]
+    const metal = new THREE.MeshStandardMaterial({ color: '#263b59', metalness: 0.6, roughness: 0.34 })
+    const glow = new THREE.MeshStandardMaterial({ color: COLORS.gold, emissive: '#ffc44d', emissiveIntensity: 3.2 })
+    for (const [x, z] of spots) {
+      const lamp = new THREE.Group()
+      lamp.position.set(x, this.groundY(x, z), z)
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 3.2, 7), metal)
+      pole.position.y = 1.6
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.08, 0.08), metal)
+      arm.position.set(0.32, 3.05, 0)
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), glow)
+      bulb.position.set(0.68, 2.95, 0)
+      lamp.add(pole, arm, bulb)
+      this.scene.add(lamp)
+    }
   }
 
   private addCity(): void {
@@ -819,7 +845,14 @@ export class Game {
       body.position.y = 0.55
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 7), new THREE.MeshStandardMaterial({ color: '#c27d63' }))
       head.position.y = 1.22
-      root.add(body, head)
+      const limbMaterial = new THREE.MeshStandardMaterial({ color: index % 2 ? '#24446f' : '#713b65', roughness: 0.82 })
+      const armL = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.25, 3, 6), limbMaterial)
+      armL.position.set(-0.26, 0.72, 0)
+      armL.userData.limbPhase = index * 0.7
+      const armR = armL.clone()
+      armR.position.x = 0.26
+      armR.userData.limbPhase = index * 0.7 + Math.PI
+      root.add(body, head, armL, armR)
       const base = new THREE.Vector3(x, this.groundY(x, z), z)
       root.position.copy(base)
       this.scene.add(root)
