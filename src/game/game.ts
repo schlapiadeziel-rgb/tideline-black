@@ -70,6 +70,7 @@ export class Game {
   private readonly npcs: Npc[] = []
   private readonly traffic: Traffic[] = []
   private readonly waterRipples: THREE.Mesh[] = []
+  private rainDrops?: THREE.LineSegments
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
   private readonly carPosition = new THREE.Vector3(13, 0.48, 11)
@@ -118,6 +119,7 @@ export class Game {
     this.scene.add(this.sun)
 
     this.buildIsland()
+    this.buildRain()
     this.car = this.buildCar()
     this.scene.add(this.car)
     this.buildTraffic()
@@ -448,6 +450,22 @@ export class Game {
       ripple.scale.set(1.8 * pulse, 0.62 * pulse, 1)
       ;(ripple.material as THREE.MeshBasicMaterial).opacity = 0.12 + (Math.sin(this.time * 0.9 + phase) + 1) * 0.04
     }
+    if (this.rainDrops) {
+      const target = this.inVehicle ? this.carPosition : this.playerPosition
+      this.rainDrops.position.set(target.x, this.groundY(target.x, target.z), target.z)
+      const positions = this.rainDrops.geometry.getAttribute('position') as THREE.BufferAttribute
+      for (let i = 0; i < positions.count; i += 2) {
+        let topY = positions.getY(i) - dt * 18
+        let bottomY = positions.getY(i + 1) - dt * 18
+        if (bottomY < -1) {
+          topY = 22 + ((i / 2) % 7) * 0.7
+          bottomY = topY - 1.2
+        }
+        positions.setY(i, topY)
+        positions.setY(i + 1, bottomY)
+      }
+      positions.needsUpdate = true
+    }
     this.updateRouteGuides()
     this.playerBody.rotation.z = Math.sin(this.time * 8) * Math.min(0.05, this.playerVelocity.length() * 0.006)
   }
@@ -574,7 +592,7 @@ export class Game {
   }
 
   private addRoad(x: number, z: number, width: number, depth: number, rotation: number): void {
-    const road = new THREE.Mesh(new THREE.BoxGeometry(width, 0.12, depth), new THREE.MeshStandardMaterial({ color: COLORS.asphalt, roughness: 0.78 }))
+    const road = new THREE.Mesh(new THREE.BoxGeometry(width, 0.12, depth), new THREE.MeshStandardMaterial({ color: '#182936', emissive: '#061520', emissiveIntensity: 0.24, roughness: 0.3, metalness: 0.24 }))
     road.position.set(x, 0.08, z)
     road.rotation.y = rotation
     road.receiveShadow = true
@@ -602,9 +620,34 @@ export class Game {
       arm.position.set(0.32, 3.05, 0)
       const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), glow)
       bulb.position.set(0.68, 2.95, 0)
-      lamp.add(pole, arm, bulb)
+      const light = new THREE.PointLight('#ffc878', 1.25, 8, 1.8)
+      light.position.set(0.68, 2.8, 0)
+      lamp.add(pole, arm, bulb, light)
       this.scene.add(lamp)
     }
+  }
+
+  private buildRain(): void {
+    const count = 150
+    const positions = new Float32Array(count * 2 * 3)
+    for (let i = 0; i < count; i += 1) {
+      const x = ((i * 37) % 120) - 60
+      const z = ((i * 61) % 120) - 60
+      const y = 4 + ((i * 19) % 20)
+      const offset = i * 6
+      positions[offset] = x
+      positions[offset + 1] = y
+      positions[offset + 2] = z
+      positions[offset + 3] = x - 0.16
+      positions[offset + 4] = y - 1.2
+      positions[offset + 5] = z + 0.04
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    const material = new THREE.LineBasicMaterial({ color: '#a9dff1', transparent: true, opacity: 0.28 })
+    this.rainDrops = new THREE.LineSegments(geometry, material)
+    this.rainDrops.frustumCulled = false
+    this.scene.add(this.rainDrops)
   }
 
   private addCity(): void {
