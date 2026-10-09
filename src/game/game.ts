@@ -581,6 +581,7 @@ export class Game {
     this.addStreetFurniture()
     this.addCity()
     this.addOceanariumLandmark()
+    this.addWaterfrontPlaza()
     this.addHarbor()
     this.addBeach()
     this.addAirport()
@@ -734,6 +735,65 @@ export class Game {
     flood.position.set(0, 4.6, -4.6)
     landmark.add(flood)
     this.scene.add(landmark)
+  }
+
+  private addWaterfrontPlaza(): void {
+    const plaza = new THREE.Group()
+    plaza.position.set(0, 0, -25)
+    const stone = new THREE.MeshStandardMaterial({ color: '#40576b', roughness: 0.38, metalness: 0.18 })
+    const wet = new THREE.MeshStandardMaterial({ color: '#214a5d', emissive: '#073246', emissiveIntensity: 0.35, transparent: true, opacity: 0.82, roughness: 0.12, metalness: 0.42 })
+    const plazaFloor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.16, 8), stone)
+    plazaFloor.position.y = 0.08
+    plazaFloor.receiveShadow = true
+    plaza.add(plazaFloor)
+    for (let i = 0; i < 5; i += 1) {
+      const puddle = new THREE.Mesh(new THREE.CircleGeometry(1.2 + (i % 2) * 0.5, 16), wet)
+      puddle.rotation.x = -Math.PI / 2
+      puddle.scale.x = 1.8
+      puddle.position.set(-9 + i * 4.5, 0.18, -0.8 + (i % 2) * 2.4)
+      plaza.add(puddle)
+    }
+    const railMaterial = new THREE.MeshStandardMaterial({ color: '#182b43', metalness: 0.72, roughness: 0.24 })
+    for (let i = 0; i < 9; i += 1) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.25, 6), railMaterial)
+      post.position.set(-12 + i * 3, 0.64, 3.6)
+      plaza.add(post)
+      if (i < 8) {
+        const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 3, 6), railMaterial)
+        rail.rotation.z = Math.PI / 2
+        rail.position.set(-10.5 + i * 3, 1.02, 3.6)
+        plaza.add(rail)
+      }
+    }
+    for (let i = 0; i < 3; i += 1) {
+      const stall = new THREE.Group()
+      stall.position.set(-8 + i * 8, 0, -2.6)
+      const counter = new THREE.Mesh(new THREE.BoxGeometry(4, 1.05, 1.2), new THREE.MeshStandardMaterial({ color: i % 2 ? '#8a5d4f' : '#476d79', roughness: 0.72 }))
+      counter.position.y = 0.55
+      const canopy = new THREE.Mesh(new THREE.ConeGeometry(2.5, 0.65, 4), new THREE.MeshStandardMaterial({ color: i % 2 ? COLORS.gold : COLORS.pink, emissive: i % 2 ? '#7a4c16' : '#70284e', emissiveIntensity: 0.6 }))
+      canopy.rotation.y = Math.PI / 4
+      canopy.position.y = 2.25
+      stall.add(counter, canopy)
+      plaza.add(stall)
+    }
+    const boatMaterial = new THREE.MeshStandardMaterial({ color: '#e7e4d7', roughness: 0.54 })
+    for (let i = 0; i < 2; i += 1) {
+      const boat = new THREE.Group()
+      boat.position.set(11 + i * 4, -0.9, 3.2 + i * 0.8)
+      const hull = new THREE.Mesh(new THREE.SphereGeometry(1.8, 12, 8), boatMaterial)
+      hull.scale.set(1.5, 0.32, 0.55)
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 2.2, 6), railMaterial)
+      mast.position.y = 0.8
+      const sail = new THREE.Mesh(new THREE.ConeGeometry(0.8, 1.5, 3), new THREE.MeshStandardMaterial({ color: i ? COLORS.coral : '#f4f0d9', side: THREE.DoubleSide }))
+      sail.rotation.z = Math.PI / 2
+      sail.position.set(0.42, 1, 0)
+      boat.add(hull, mast, sail)
+      plaza.add(boat)
+    }
+    const sign = new THREE.Mesh(new THREE.BoxGeometry(7, 0.42, 0.08), new THREE.MeshStandardMaterial({ color: COLORS.coral, emissive: '#8b2b4d', emissiveIntensity: 1.2 }))
+    sign.position.set(0, 3.1, -2.7)
+    plaza.add(sign)
+    this.scene.add(plaza)
   }
 
   private addHarbor(): void {
