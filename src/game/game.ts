@@ -460,13 +460,25 @@ export class Game {
     if (progressBar) progressBar.style.width = progress
     if (this.hudLocation) this.hudLocation.textContent = this.locationName()
     if (this.hudSpeed) this.hudSpeed.textContent = this.inVehicle ? `${this.car.userData.speed ?? 0} KM/H` : '步行'
+    const position = this.inVehicle ? this.carPosition : this.playerPosition
+    const target = this.missionTargets[this.missionStage]
+    const dx = target.x - position.x
+    const dz = target.z - position.z
+    const distance = Math.hypot(dx, dz)
+    const radar = this.customHud.querySelector<HTMLElement>('.mini-radar i')
+    const radarDistance = this.customHud.querySelector<HTMLElement>('.mini-radar b')
+    if (radar && radarDistance) {
+      const scale = Math.max(1, distance / 24)
+      radar.style.left = `${50 + THREE.MathUtils.clamp(dx / scale, -42, 42)}%`
+      radar.style.top = `${50 + THREE.MathUtils.clamp(dz / scale, -42, 42)}%`
+      radarDistance.textContent = `${Math.round(distance)}M`
+    }
     if (this.hudPrompt) {
-      const pos = this.inVehicle ? this.carPosition : this.playerPosition
       let prompt = ''
-      if (this.inVehicle && this.missionStage === 'deliver' && pos.distanceTo(this.missionTargets.deliver) < 4.5) prompt = 'E  交付'
+      if (this.inVehicle && this.missionStage === 'deliver' && position.distanceTo(this.missionTargets.deliver) < 4.5) prompt = 'E  交付'
       else if (this.inVehicle) prompt = 'E  下车'
-      else if (this.missionStage !== 'complete' && pos.distanceTo(this.missionTargets[this.missionStage]) < 4.5) prompt = 'E  互动'
-      else if (pos.distanceTo(this.carPosition) < 3.2) prompt = 'E  上车'
+      else if (this.missionStage !== 'complete' && position.distanceTo(this.missionTargets[this.missionStage]) < 4.5) prompt = 'E  互动'
+      else if (position.distanceTo(this.carPosition) < 3.2) prompt = 'E  上车'
       this.hudPrompt.textContent = prompt
       this.hudPrompt.classList.toggle('is-visible', Boolean(prompt))
     }
@@ -480,6 +492,7 @@ export class Game {
     hud.innerHTML = `
       <div class="location-chip"><span>当前位置</span><strong></strong></div>
       <div class="mission-card"><div class="mission-kicker">主线任务 · 潮汐线</div><strong class="mission-title"></strong><p class="mission-copy"></p><div class="mission-line"><i></i></div></div>
+      <div class="mini-radar" aria-label="任务雷达"><span></span><i></i><b>0M</b></div>
       <div class="vehicle-chip"><span>载具状态</span><strong class="vehicle-speed"></strong></div>
       <div class="interaction-prompt"></div>
     `
