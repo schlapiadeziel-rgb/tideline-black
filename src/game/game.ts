@@ -106,6 +106,7 @@ export class Game {
   ) {
     this.scene.background = new THREE.Color('#0b263e')
     this.scene.fog = new THREE.Fog('#0b263e', 55, 180)
+    this.buildSkyDome()
     this.scene.add(this.hemi)
     this.sun.position.set(-25, 50, 20)
     this.sun.castShadow = true
@@ -528,7 +529,7 @@ export class Game {
   }
 
   private buildIsland(): void {
-    const water = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), new THREE.MeshStandardMaterial({ color: COLORS.ocean, roughness: 0.18, metalness: 0.15 }))
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(260, 260, 1, 1), new THREE.MeshStandardMaterial({ color: COLORS.ocean, emissive: '#06364f', emissiveIntensity: 0.32, roughness: 0.14, metalness: 0.24 }))
     water.rotation.x = -Math.PI / 2
     water.position.y = -1.55
     water.receiveShadow = true
@@ -616,11 +617,16 @@ export class Game {
         const h = 3.5 + ((index * 17) % 7)
         const w = 3.5 + ((index * 3) % 2)
         const color = palette[index % palette.length]
-        const building = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), new THREE.MeshStandardMaterial({ color, roughness: 0.66, metalness: 0.18 }))
+        const buildingGeometry = new THREE.BoxGeometry(w, h, w)
+        const building = new THREE.Mesh(buildingGeometry, new THREE.MeshStandardMaterial({ color, roughness: 0.66, metalness: 0.18 }))
         building.position.set(x, h / 2 + 0.15, z)
         building.castShadow = true
         building.receiveShadow = true
         this.scene.add(building)
+        const buildingOutline = new THREE.LineSegments(new THREE.EdgesGeometry(buildingGeometry), new THREE.LineBasicMaterial({ color: '#17233f', transparent: true, opacity: 0.7 }))
+        buildingOutline.position.copy(building.position)
+        buildingOutline.scale.setScalar(1.006)
+        this.scene.add(buildingOutline)
         const sign = new THREE.Mesh(new THREE.BoxGeometry(w * 0.82, 0.28, 0.05), new THREE.MeshStandardMaterial({ color: COLORS.cityLight, emissive: COLORS.cityLight, emissiveIntensity: 1.7 }))
         sign.position.set(x, h * 0.56, z - w / 2 - 0.03)
         this.scene.add(sign)
@@ -772,6 +778,31 @@ export class Game {
     this.scene.add(sprite)
   }
 
+  private buildSkyDome(): void {
+    const canvas = document.createElement('canvas')
+    canvas.width = 512
+    canvas.height = 512
+    const ctx = canvas.getContext('2d')!
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+    gradient.addColorStop(0, '#111a42')
+    gradient.addColorStop(0.42, '#1f6f8b')
+    gradient.addColorStop(0.74, '#f0a27f')
+    gradient.addColorStop(1, '#ffd39a')
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    const halo = ctx.createRadialGradient(390, 350, 4, 390, 350, 90)
+    halo.addColorStop(0, 'rgba(255,245,186,0.95)')
+    halo.addColorStop(0.22, 'rgba(255,212,128,0.36)')
+    halo.addColorStop(1, 'rgba(255,212,128,0)')
+    ctx.fillStyle = halo
+    ctx.fillRect(250, 210, 260, 260)
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(190, 24, 16), new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, depthWrite: false }))
+    dome.renderOrder = -10
+    this.scene.add(dome)
+  }
+
   private buildPlayer(): THREE.Group {
     const root = new THREE.Group()
     const skin = new THREE.MeshStandardMaterial({ color: '#e9a078', roughness: 0.7 })
@@ -814,13 +845,18 @@ export class Game {
 
   private buildCar(color = '#d84f59'): THREE.Group {
     const car = new THREE.Group()
-    const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.62, 4.2), new THREE.MeshStandardMaterial({ color, metalness: 0.35, roughness: 0.32 }))
+    const bodyGeometry = new THREE.BoxGeometry(2.2, 0.62, 4.2)
+    const body = new THREE.Mesh(bodyGeometry, new THREE.MeshStandardMaterial({ color, metalness: 0.35, roughness: 0.32 }))
     body.position.y = 0.62
     body.castShadow = true
     const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.62, 1.9), new THREE.MeshStandardMaterial({ color: '#15263b', metalness: 0.2, roughness: 0.25 }))
     cabin.position.set(0, 1.08, -0.15)
     cabin.castShadow = true
     car.add(body, cabin)
+    const bodyOutline = new THREE.LineSegments(new THREE.EdgesGeometry(bodyGeometry), new THREE.LineBasicMaterial({ color: '#17233f', transparent: true, opacity: 0.78 }))
+    bodyOutline.position.copy(body.position)
+    bodyOutline.scale.setScalar(1.008)
+    car.add(bodyOutline)
     for (const x of [-1.13, 1.13]) for (const z of [-1.25, 1.25]) {
       const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.22, 14), new THREE.MeshStandardMaterial({ color: '#11151d', roughness: 0.7 }))
       wheel.rotation.z = Math.PI / 2
