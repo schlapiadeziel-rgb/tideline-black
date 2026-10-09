@@ -381,6 +381,7 @@ export class Game {
     const target = this.inVehicle ? this.carPosition : this.playerPosition
     const distance = this.inVehicle ? 8.2 : CONFIG.camera.distance + 1.2
     const height = this.inVehicle ? 3.1 : CONFIG.camera.height + 0.9
+    const speed = this.inVehicle ? Math.min(1, this.carVelocity.length() / 18) : Math.min(1, this.playerVelocity.length() / CONFIG.player.sprintSpeed)
     const horizontal = Math.cos(this.pitch) * distance
     const desired = new THREE.Vector3(
       target.x - Math.sin(this.yaw) * horizontal,
@@ -388,8 +389,17 @@ export class Game {
       target.z + Math.cos(this.yaw) * horizontal,
     )
     this.camera.position.lerp(desired, 1 - Math.exp(-Math.max(dt, 0.016) * 8))
-    this.focus.lerp(new THREE.Vector3(target.x, target.y + 1.2, target.z), 1 - Math.exp(-Math.max(dt, 0.016) * 10))
+    const focusTarget = new THREE.Vector3(target.x, target.y + 1.2 + speed * 0.12, target.z)
+    if (this.inVehicle && this.carVelocity.lengthSq() > 0.1) focusTarget.add(this.carVelocity.clone().normalize().multiplyScalar(1.4 + speed * 1.4))
+    this.focus.lerp(focusTarget, 1 - Math.exp(-Math.max(dt, 0.016) * 10))
     this.camera.lookAt(this.focus)
+    const targetFov = CONFIG.camera.fov + (this.inVehicle ? speed * 9 : speed * 2)
+    if (Math.abs(this.camera.fov - targetFov) > 0.05) {
+      this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFov, 1 - Math.exp(-Math.max(dt, 0.016) * 7))
+      this.camera.updateProjectionMatrix()
+    }
+    const roll = this.inVehicle ? Math.sin(this.yaw) * speed * 0.018 : 0
+    this.camera.rotation.z = THREE.MathUtils.lerp(this.camera.rotation.z, roll, 1 - Math.exp(-Math.max(dt, 0.016) * 6))
   }
 
   private animateActors(dt: number): void {
