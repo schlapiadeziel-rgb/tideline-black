@@ -1,0 +1,28 @@
+flowchart TB
+  Platform[Android 设备能力检测] --> Quality[画质配置管理器]
+  Platform --> Input[Enhanced Input 抽象层]
+  Quality --> Presentation[渲染 / 灯光 / 雾 / Niagara]
+  Input --> Character[第三人称角色]
+  Input --> Vehicle[车辆驾驶]
+  Input --> UI[横屏 HUD 与触控]
+  Character --> Interaction[互动系统]
+  Vehicle --> Interaction
+  Interaction --> Mission[任务状态机]
+  UI --> Mission
+  Mission --> Dialogue[对话与演出]
+  Mission --> Save[存档与检查点]
+  Streaming[World Partition 分区流式加载] --> Character
+  Streaming --> Vehicle
+  Streaming --> Mission
+  Streaming --> Presentation
+  Quality --> Streaming
+  Presentation --> UI
+  Audio[环境 / 车辆 / 任务音频] --> Mission
+  Audio --> Presentation
+
+  classDef core fill:#18324a,stroke:#77e7d7,color:#f4ffff
+  classDef gameplay fill:#34284f,stroke:#ff9f6e,color:#fff7ec
+  classDef system fill:#243c35,stroke:#c8f36b,color:#f7ffe7
+  class Platform,Quality,Input,Streaming,Presentation,Audio system
+  class Character,Vehicle,Interaction,Mission,Dialogue,Save gameplay
+  class UI core
