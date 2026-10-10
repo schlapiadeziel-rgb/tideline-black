@@ -71,6 +71,7 @@ export class Game {
   private readonly traffic: Traffic[] = []
   private readonly waterRipples: THREE.Mesh[] = []
   private readonly plazaRipples: THREE.Mesh[] = []
+  private readonly waterfrontBoats: Array<{ root: THREE.Group; phase: number; drift: number }> = []
   private rainDrops?: THREE.LineSegments
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
@@ -457,6 +458,13 @@ export class Game {
       ripple.scale.setScalar(0.72 + pulse * 0.7)
       ;(ripple.material as THREE.MeshBasicMaterial).opacity = 0.08 + (1 - pulse) * 0.16
     }
+    for (const boat of this.waterfrontBoats) {
+      boat.phase += dt * 0.9
+      boat.root.position.y = -0.9 + Math.sin(boat.phase) * 0.08
+      boat.root.rotation.z = Math.sin(boat.phase * 0.8) * 0.035
+      boat.root.position.x += dt * boat.drift
+      if (boat.root.position.x > 17) boat.root.position.x = 10.5
+    }
     if (this.rainDrops) {
       const target = this.inVehicle ? this.carPosition : this.playerPosition
       this.rainDrops.position.set(target.x, this.groundY(target.x, target.z), target.z)
@@ -802,6 +810,7 @@ export class Game {
       sail.position.set(0.42, 1, 0)
       boat.add(hull, mast, sail)
       plaza.add(boat)
+      this.waterfrontBoats.push({ root: boat, phase: i * 1.7, drift: 0.06 + i * 0.025 })
     }
     const palmTrunk = new THREE.MeshStandardMaterial({ color: '#8d5f44', roughness: 0.88 })
     const palmLeaf = new THREE.MeshStandardMaterial({ color: '#4c9d74', emissive: '#143e3c', emissiveIntensity: 0.25, roughness: 0.82 })
