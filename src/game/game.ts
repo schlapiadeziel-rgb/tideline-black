@@ -72,6 +72,7 @@ export class Game {
   private readonly waterRipples: THREE.Mesh[] = []
   private readonly plazaRipples: THREE.Mesh[] = []
   private readonly waterfrontBoats: Array<{ root: THREE.Group; phase: number; drift: number }> = []
+  private readonly oceanariumLightBands: THREE.MeshStandardMaterial[] = []
   private rainDrops?: THREE.LineSegments
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
@@ -465,6 +466,9 @@ export class Game {
       boat.root.position.x += dt * boat.drift
       if (boat.root.position.x > 17) boat.root.position.x = 10.5
     }
+    this.oceanariumLightBands.forEach((material, index) => {
+      material.emissiveIntensity = 1.1 + (Math.sin(this.time * 1.35 + index * 0.55) + 1) * 0.65
+    })
     if (this.rainDrops) {
       const target = this.inVehicle ? this.carPosition : this.playerPosition
       this.rainDrops.position.set(target.x, this.groundY(target.x, target.z), target.z)
@@ -734,6 +738,13 @@ export class Game {
       const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 5.4, 0.55), trimMaterial)
       pillar.position.set(x, 2.7, -3.55)
       landmark.add(pillar)
+    }
+    for (let i = 0; i < 5; i += 1) {
+      const bandMaterial = new THREE.MeshStandardMaterial({ color: '#8cf7f2', emissive: '#18bfc7', emissiveIntensity: 1.5, transparent: true, opacity: 0.86, metalness: 0.2, roughness: 0.18 })
+      const band = new THREE.Mesh(new THREE.BoxGeometry(0.32, 3.2, 0.08), bandMaterial)
+      band.position.set(-5.6 + i * 2.8, 2.4, -3.61)
+      landmark.add(band)
+      this.oceanariumLightBands.push(bandMaterial)
     }
     const banner = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.9, 0.08), new THREE.MeshStandardMaterial({ color: COLORS.coral, emissive: '#7d2948', emissiveIntensity: 1.2 }))
     banner.position.set(0, 4.3, -3.62)
