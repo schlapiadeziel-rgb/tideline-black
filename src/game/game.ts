@@ -73,6 +73,7 @@ export class Game {
   private readonly plazaRipples: THREE.Mesh[] = []
   private readonly waterfrontBoats: Array<{ root: THREE.Group; phase: number; drift: number }> = []
   private readonly oceanariumLightBands: THREE.MeshStandardMaterial[] = []
+  private readonly aquariumFish: Array<{ root: THREE.Group; phase: number; speed: number; baseY: number }> = []
   private rainDrops?: THREE.LineSegments
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
@@ -469,6 +470,13 @@ export class Game {
     this.oceanariumLightBands.forEach((material, index) => {
       material.emissiveIntensity = 1.1 + (Math.sin(this.time * 1.35 + index * 0.55) + 1) * 0.65
     })
+    for (const fish of this.aquariumFish) {
+      fish.phase += dt * fish.speed
+      fish.root.position.x += dt * fish.speed * 0.7
+      fish.root.position.y = fish.baseY + Math.sin(fish.phase * 1.7) * 0.18
+      fish.root.rotation.z = Math.sin(fish.phase * 1.7) * 0.08
+      if (fish.root.position.x > 5.4) fish.root.position.x = -5.4
+    }
     if (this.rainDrops) {
       const target = this.inVehicle ? this.carPosition : this.playerPosition
       this.rainDrops.position.set(target.x, this.groundY(target.x, target.z), target.z)
@@ -730,6 +738,19 @@ export class Game {
     dome.position.set(0, 5.2, 0)
     dome.castShadow = true
     landmark.add(dome)
+    const fishMaterial = new THREE.MeshStandardMaterial({ color: '#1b6480', emissive: '#0a8a9c', emissiveIntensity: 0.8, transparent: true, opacity: 0.78, roughness: 0.3 })
+    for (let i = 0; i < 3; i += 1) {
+      const fish = new THREE.Group()
+      fish.position.set(-4.4 + i * 3.7, 4.4 + (i % 2) * 0.8, -0.8)
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.58, 10, 7), fishMaterial)
+      body.scale.set(1.45, 0.58, 0.4)
+      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.7, 3), fishMaterial)
+      tail.rotation.z = -Math.PI / 2
+      tail.position.x = -0.92
+      fish.add(body, tail)
+      landmark.add(fish)
+      this.aquariumFish.push({ root: fish, phase: i * 1.4, speed: 0.34 + i * 0.08, baseY: fish.position.y })
+    }
     const entrance = new THREE.Mesh(new THREE.TorusGeometry(2.3, 0.28, 8, 24, Math.PI), trimMaterial)
     entrance.rotation.z = Math.PI
     entrance.position.set(0, 1.8, -3.58)
