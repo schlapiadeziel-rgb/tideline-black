@@ -75,6 +75,7 @@ export class Game {
   private readonly oceanariumLightBands: THREE.MeshStandardMaterial[] = []
   private readonly aquariumFish: Array<{ root: THREE.Group; phase: number; speed: number; baseY: number }> = []
   private readonly aquariumMist: THREE.Mesh[] = []
+  private readonly plazaBulbs: THREE.MeshStandardMaterial[] = []
   private rainDrops?: THREE.LineSegments
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
@@ -484,6 +485,9 @@ export class Game {
       mist.scale.set((1.1 + pulse * 0.5) * 1.6, 1.1 + pulse * 0.5, 1)
       ;(mist.material as THREE.MeshBasicMaterial).opacity = 0.06 + pulse * 0.08
     }
+    this.plazaBulbs.forEach((material, index) => {
+      material.emissiveIntensity = 1.6 + (Math.sin(this.time * 1.7 + index * 0.9) + 1) * 0.55
+    })
     if (this.rainDrops) {
       const target = this.inVehicle ? this.carPosition : this.playerPosition
       this.rainDrops.position.set(target.x, this.groundY(target.x, target.z), target.z)
@@ -889,6 +893,17 @@ export class Game {
     const waterline = new THREE.Mesh(new THREE.BoxGeometry(25, 0.06, 0.12), new THREE.MeshStandardMaterial({ color: '#55e6ea', emissive: '#0ba2b4', emissiveIntensity: 2.5 }))
     waterline.position.set(0, 0.32, 3.9)
     plaza.add(waterline)
+    const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 22, 6), new THREE.MeshStandardMaterial({ color: '#19243a', metalness: 0.4, roughness: 0.6 }))
+    cable.rotation.z = Math.PI / 2
+    cable.position.set(0, 3.55, 1.35)
+    plaza.add(cable)
+    for (let i = 0; i < 7; i += 1) {
+      const bulbMaterial = new THREE.MeshStandardMaterial({ color: '#ffd68a', emissive: '#ff9d3d', emissiveIntensity: 2.1, roughness: 0.3 })
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), bulbMaterial)
+      bulb.position.set(-9 + i * 3, 3.42 - Math.abs(i - 3) * 0.06, 1.35)
+      plaza.add(bulb)
+      this.plazaBulbs.push(bulbMaterial)
+    }
     const sign = new THREE.Mesh(new THREE.BoxGeometry(7, 0.42, 0.08), new THREE.MeshStandardMaterial({ color: COLORS.coral, emissive: '#8b2b4d', emissiveIntensity: 1.2 }))
     sign.position.set(0, 3.1, -2.7)
     plaza.add(sign)
