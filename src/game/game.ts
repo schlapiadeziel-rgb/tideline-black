@@ -74,6 +74,7 @@ export class Game {
   private readonly waterfrontBoats: Array<{ root: THREE.Group; phase: number; drift: number }> = []
   private readonly oceanariumLightBands: THREE.MeshStandardMaterial[] = []
   private readonly aquariumFish: Array<{ root: THREE.Group; phase: number; speed: number; baseY: number }> = []
+  private readonly aquariumMist: THREE.Mesh[] = []
   private rainDrops?: THREE.LineSegments
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
@@ -477,6 +478,12 @@ export class Game {
       fish.root.rotation.z = Math.sin(fish.phase * 1.7) * 0.08
       if (fish.root.position.x > 5.4) fish.root.position.x = -5.4
     }
+    for (const mist of this.aquariumMist) {
+      const phase = mist.userData.phase ?? 0
+      const pulse = (Math.sin(this.time * 0.8 + phase) + 1) * 0.5
+      mist.scale.set((1.1 + pulse * 0.5) * 1.6, 1.1 + pulse * 0.5, 1)
+      ;(mist.material as THREE.MeshBasicMaterial).opacity = 0.06 + pulse * 0.08
+    }
     if (this.rainDrops) {
       const target = this.inVehicle ? this.carPosition : this.playerPosition
       this.rainDrops.position.set(target.x, this.groundY(target.x, target.z), target.z)
@@ -750,6 +757,15 @@ export class Game {
       fish.add(body, tail)
       landmark.add(fish)
       this.aquariumFish.push({ root: fish, phase: i * 1.4, speed: 0.34 + i * 0.08, baseY: fish.position.y })
+    }
+    for (let i = 0; i < 3; i += 1) {
+      const mist = new THREE.Mesh(new THREE.RingGeometry(0.82 + i * 0.18, 1.08 + i * 0.18, 20), new THREE.MeshBasicMaterial({ color: '#6feef1', transparent: true, opacity: 0.1, side: THREE.DoubleSide }))
+      mist.rotation.x = -Math.PI / 2
+      mist.position.set((i - 1) * 1.2, 0.3, -3.9)
+      mist.scale.x = 1.6
+      mist.userData.phase = i * 1.1
+      landmark.add(mist)
+      this.aquariumMist.push(mist)
     }
     const entrance = new THREE.Mesh(new THREE.TorusGeometry(2.3, 0.28, 8, 24, Math.PI), trimMaterial)
     entrance.rotation.z = Math.PI
