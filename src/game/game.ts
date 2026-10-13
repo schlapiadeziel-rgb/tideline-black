@@ -19,7 +19,7 @@ export type GameHooks = {
 }
 
 type MissionStage = 'idle' | 'pickup' | 'deliver' | 'complete'
-type Npc = { root: THREE.Group; phase: number; base: THREE.Vector3; speed: number }
+type Npc = { root: THREE.Group; phase: number; base: THREE.Vector3; speed: number; path: THREE.Vector3[]; waypoint: number; pause: number }
 type Traffic = { root: THREE.Group; axis: 'x' | 'z'; lane: number; progress: number; speed: number; direction: 1 | -1 }
 
 const COLORS = {
@@ -420,8 +420,26 @@ export class Game {
   private animateActors(dt: number): void {
     for (const npc of this.npcs) {
       npc.phase += dt * npc.speed
+      if (npc.path.length > 1) {
+        if (npc.pause > 0) {
+          npc.pause -= dt
+        } else {
+          const target = npc.path[npc.waypoint]
+          const delta = target.clone().sub(npc.root.position)
+          delta.y = 0
+          if (delta.lengthSq() < 0.05) {
+            npc.waypoint = (npc.waypoint + 1) % npc.path.length
+            npc.pause = 0.9
+          } else {
+            delta.normalize()
+            npc.root.position.addScaledVector(delta, npc.speed * dt)
+            const desiredYaw = Math.atan2(delta.x, delta.z)
+            npc.root.rotation.y = THREE.MathUtils.lerp(npc.root.rotation.y, desiredYaw, 1 - Math.exp(-dt * 7))
+          }
+        }
+      }
       npc.root.position.y = npc.base.y + Math.sin(npc.phase) * 0.06
-      npc.root.rotation.y += dt * 0.18
+      if (npc.path.length <= 1) npc.root.rotation.y += dt * 0.18
       for (const child of npc.root.children) {
         if (typeof child.userData.limbPhase === 'number') child.rotation.z = Math.sin(npc.phase * 2.2 + child.userData.limbPhase) * 0.3
       }
@@ -1224,9 +1242,12 @@ export class Game {
       armR.userData.limbPhase = index * 0.7 + Math.PI
       root.add(body, head, armL, armR)
       const base = new THREE.Vector3(x, this.groundY(x, z), z)
+      const path = index < 3
+        ? [[-8, -27], [0, -23], [8, -27], [0, -30]].map(([pathX, pathZ]) => new THREE.Vector3(pathX, this.groundY(pathX, pathZ), pathZ))
+        : [base.clone()]
       root.position.copy(base)
       this.scene.add(root)
-      this.npcs.push({ root, base, phase: index * 0.8, speed: 0.55 + (index % 3) * 0.18 })
+      this.npcs.push({ root, base, phase: index * 0.8, speed: 0.55 + (index % 3) * 0.18, path, waypoint: index < 3 ? 1 : 0, pause: index < 3 ? index * 0.35 : 0 })
     })
   }
 
