@@ -76,6 +76,7 @@ export class Game {
   private readonly aquariumFish: Array<{ root: THREE.Group; phase: number; speed: number; baseY: number }> = []
   private readonly aquariumMist: THREE.Mesh[] = []
   private readonly plazaBulbs: THREE.MeshStandardMaterial[] = []
+  private readonly plazaNeonSigns: THREE.MeshStandardMaterial[] = []
   private rainDrops?: THREE.LineSegments
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
@@ -516,6 +517,9 @@ export class Game {
     this.plazaBulbs.forEach((material, index) => {
       material.emissiveIntensity = 1.6 + (Math.sin(this.time * 1.7 + index * 0.9) + 1) * 0.55
     })
+    this.plazaNeonSigns.forEach((material, index) => {
+      material.emissiveIntensity = 1.35 + (Math.sin(this.time * 1.15 + index * 1.25) + 1) * 0.45
+    })
     if (this.rainDrops) {
       const target = this.inVehicle ? this.carPosition : this.playerPosition
       this.rainDrops.position.set(target.x, this.groundY(target.x, target.z), target.z)
@@ -876,6 +880,14 @@ export class Game {
       canopy.position.y = 2.25
       stall.add(counter, canopy)
       plaza.add(stall)
+    }
+    const neonColors = ['#ff7f9c', '#7ff7ef', '#ffd166']
+    for (let i = 0; i < 3; i += 1) {
+      const neon = new THREE.MeshStandardMaterial({ color: neonColors[i], emissive: neonColors[i], emissiveIntensity: 1.8, metalness: 0.12, roughness: 0.24 })
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.72, 0.08), neon)
+      sign.position.set(-8 + i * 8, 2.35, -3.28)
+      plaza.add(sign)
+      this.plazaNeonSigns.push(neon)
     }
     const boatMaterial = new THREE.MeshStandardMaterial({ color: '#e7e4d7', roughness: 0.54 })
     for (let i = 0; i < 2; i += 1) {
