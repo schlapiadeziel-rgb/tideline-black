@@ -19,7 +19,7 @@ export type GameHooks = {
 }
 
 type MissionStage = 'idle' | 'pickup' | 'deliver' | 'complete'
-type Npc = { root: THREE.Group; phase: number; base: THREE.Vector3; speed: number; path: THREE.Vector3[]; waypoint: number; pause: number }
+type Npc = { root: THREE.Group; phase: number; base: THREE.Vector3; speed: number; path: THREE.Vector3[]; waypoint: number; pause: number; head: THREE.Object3D; waveArm: THREE.Object3D }
 type Traffic = { root: THREE.Group; axis: 'x' | 'z'; lane: number; progress: number; speed: number; direction: 1 | -1 }
 
 const COLORS = {
@@ -79,6 +79,7 @@ export class Game {
   private rainDrops?: THREE.LineSegments
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
+  private readonly npcLook = new THREE.Vector3()
   private readonly carPosition = new THREE.Vector3(13, 0.48, 11)
   private readonly carVelocity = new THREE.Vector3()
   private readonly focus = new THREE.Vector3()
@@ -440,8 +441,17 @@ export class Game {
       }
       npc.root.position.y = npc.base.y + Math.sin(npc.phase) * 0.06
       if (npc.path.length <= 1) npc.root.rotation.y += dt * 0.18
+      this.npcLook.copy(this.playerPosition).sub(npc.root.position)
+      this.npcLook.y = 0
+      const nearPlayer = this.npcLook.lengthSq() < 36
+      const lookYaw = nearPlayer ? THREE.MathUtils.clamp(Math.atan2(this.npcLook.x, this.npcLook.z) - npc.root.rotation.y, -0.9, 0.9) : 0
+      npc.head.rotation.y = THREE.MathUtils.lerp(npc.head.rotation.y, lookYaw, 1 - Math.exp(-dt * 6))
       for (const child of npc.root.children) {
-        if (typeof child.userData.limbPhase === 'number') child.rotation.z = Math.sin(npc.phase * 2.2 + child.userData.limbPhase) * 0.3
+        if (child === npc.waveArm && nearPlayer) {
+          child.rotation.z = -0.65 + Math.sin(this.time * 7.5) * 0.24
+        } else if (typeof child.userData.limbPhase === 'number') {
+          child.rotation.z = Math.sin(npc.phase * 2.2 + child.userData.limbPhase) * 0.3
+        }
       }
     }
     for (const marker of this.markerGroups.values()) {
@@ -1247,7 +1257,7 @@ export class Game {
         : [base.clone()]
       root.position.copy(base)
       this.scene.add(root)
-      this.npcs.push({ root, base, phase: index * 0.8, speed: 0.55 + (index % 3) * 0.18, path, waypoint: index < 3 ? 1 : 0, pause: index < 3 ? index * 0.35 : 0 })
+      this.npcs.push({ root, base, phase: index * 0.8, speed: 0.55 + (index % 3) * 0.18, path, waypoint: index < 3 ? 1 : 0, pause: index < 3 ? index * 0.35 : 0, head, waveArm: armR })
     })
   }
 
