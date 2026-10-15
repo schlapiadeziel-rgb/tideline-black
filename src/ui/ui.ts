@@ -5,6 +5,7 @@ import { insertScore, type Locale, type Quality, type SaveData, type SaveStore }
 import { CONFIG } from '../game/config'
 import type { Compass, Hint } from '../game/game'
 import { formatClock, stars, type RunState } from '../game/rules'
+import { compareVersions, parseUpdateManifest } from '../engine/update'
 
 export type Screen = 'boot' | 'title' | 'hud' | 'pause' | 'settings' | 'leaderboard' | 'results'
 
@@ -31,6 +32,8 @@ const GLYPH = {
 }
 
 const LATEST_APK_URL = 'https://github.com/schlapiadeziel-rgb/tideline-black/releases/latest/download/tideline-black-latest.apk'
+const UPDATE_MANIFEST_URL = 'https://raw.githubusercontent.com/schlapiadeziel-rgb/tideline-black/main/public/update.json'
+const APP_VERSION = '2.10.0'
 
 /**
  * DOM game UI: title, HUD, pause, settings, results and leaderboard as HTML/CSS layered over the
@@ -48,6 +51,7 @@ export class Ui {
   private savedRank = -1
   private stormShown = false
   private lastMethod = ''
+  private latestUpdateUrl = LATEST_APK_URL
 
   constructor(
     private readonly i18n: I18n,
@@ -67,6 +71,7 @@ export class Ui {
     i18n.onChange(() => this.translate())
     this.translate()
     this.refreshSettings()
+    void this.checkForUpdate()
   }
 
   // ─── screens ────────────────────────────────────────────────────────────
@@ -325,13 +330,30 @@ export class Ui {
 
   private openUpdate(): void {
     const link = document.createElement('a')
-    link.href = LATEST_APK_URL
+    link.href = this.latestUpdateUrl
     link.target = '_blank'
     link.rel = 'noopener noreferrer'
     link.download = 'tideline-black-latest.apk'
     document.body.append(link)
     link.click()
     link.remove()
+  }
+
+  private async checkForUpdate(): Promise<void> {
+    try {
+      const response = await fetch(`${UPDATE_MANIFEST_URL}?t=${Date.now()}`, { cache: 'no-store' })
+      if (!response.ok) return
+      const manifest = parseUpdateManifest(await response.json())
+      if (!manifest || compareVersions(manifest.version, APP_VERSION) <= 0) return
+      this.latestUpdateUrl = manifest.apkUrl
+      for (const button of this.qa<HTMLElement>('.btn-update')) {
+        button.classList.add('has-update')
+        button.title = this.i18n.t('menu.updateAvailable')
+        button.setAttribute('aria-label', this.i18n.t('menu.updateAvailable'))
+      }
+    } catch {
+      // Offline play remains available; a failed update check is non-fatal.
+    }
   }
 
   private onInput(e: Event): void {

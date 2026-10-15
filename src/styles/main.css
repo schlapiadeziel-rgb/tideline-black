@@ -141,6 +141,7 @@ button { font: inherit; color: inherit; }
 .btn-primary::after { border-color: var(--gold); }
 .btn-primary { color: var(--gold); }
 .btn-update { color: var(--cyan); }
+.btn-update.has-update { border-color: rgba(255, 211, 92, .8); color: #ffd35c; box-shadow: 0 0 16px rgba(255, 211, 92, .22); }
 .btn-update::after { border-color: rgba(126, 249, 255, .55); }
 .btn-small { min-width: 0; padding: 10px 20px; font-size: 16px; }
 .menu-row .btn { min-width: 200px; text-align: center; }
@@ -433,6 +434,8 @@ body.has-touch .hint.is-active { transform: translate(-50%, 0); }
 .openworld-hud { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .25s ease; pointer-events: none; color: #effbff; font-family: var(--body); }
 .openworld-hud.is-visible { opacity: 1; visibility: visible; }
 .openworld-hud::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4, 15, 28, .48), transparent 20%, transparent 73%, rgba(4, 15, 28, .32)); pointer-events: none; }
+.openworld-hud::after { content: ''; position: absolute; inset: -18%; opacity: 0; pointer-events: none; background: repeating-conic-gradient(from 0deg, transparent 0deg 7deg, rgba(126, 249, 255, .16) 7.5deg 8deg, transparent 8.5deg 15deg); mask-image: radial-gradient(ellipse at center, transparent 25%, #000 68%); transform: scaleX(calc(1 + var(--speed-level, 0) * .12)); transition: opacity .2s ease; }
+.openworld-hud.is-driving-fast::after { opacity: calc(var(--speed-level, 0) * .65); animation: speedPulse .24s linear infinite; }
 .location-chip, .vehicle-chip, .mission-card, .interaction-prompt { position: absolute; background: linear-gradient(145deg, rgba(19, 35, 63, .88), rgba(8, 20, 40, .78)); border: 2px solid rgba(126, 249, 255, .42); box-shadow: 0 10px 30px rgba(0, 0, 0, .28), 0 0 18px rgba(45, 235, 222, .12), inset 0 0 24px rgba(52, 196, 194, .08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .location-chip { top: 28px; left: 28px; padding: 10px 16px 11px; border-left: 3px solid #71e6d4; min-width: 150px; }
 .location-chip span, .vehicle-chip span, .mission-kicker { display: block; color: rgba(214, 248, 244, .62); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; }
@@ -456,6 +459,7 @@ body.has-touch .hint.is-active { transform: translate(-50%, 0); }
 .interaction-prompt.is-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 .hud-compass { background: rgba(7, 19, 32, .52); border-color: rgba(113, 230, 212, .32); }
 .hud-score b, .hud-clock b { color: #71e6d4; }
+@keyframes speedPulse { from { transform: scaleX(1); } to { transform: scaleX(1.12); } }
 @media (max-width: 680px) {
   .location-chip { top: 14px; left: 14px; }
   .mini-radar { top: 104px; left: 14px; width: 76px; height: 76px; }
