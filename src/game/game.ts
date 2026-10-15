@@ -82,6 +82,7 @@ export class Game {
   private readonly playerVelocity = new THREE.Vector3()
   private readonly npcLook = new THREE.Vector3()
   private readonly npcDelta = new THREE.Vector3()
+  private readonly driveDirection = new THREE.Vector3()
   private readonly carPosition = new THREE.Vector3(13, 0.48, 11)
   private readonly carVelocity = new THREE.Vector3()
   private readonly focus = new THREE.Vector3()
@@ -328,8 +329,8 @@ export class Game {
     const steer = move.x * dt * (Math.abs(move.y) > 0.05 ? Math.sign(move.y) : 1) * 1.7
     this.car.rotation.y += steer
     // 车辆模型车头、前灯和尾翼约定为本地 Z 负方向；驾驶向量必须与车头一致。
-    const direction = new THREE.Vector3(Math.sin(this.car.rotation.y), 0, -Math.cos(this.car.rotation.y))
-    const desired = direction.multiplyScalar(move.y * 18)
+    this.driveDirection.set(Math.sin(this.car.rotation.y), 0, -Math.cos(this.car.rotation.y))
+    const desired = this.driveDirection.multiplyScalar(move.y * 18)
     this.carVelocity.x = THREE.MathUtils.damp(this.carVelocity.x, desired.x, 4.5, dt)
     this.carVelocity.z = THREE.MathUtils.damp(this.carVelocity.z, desired.z, 4.5, dt)
     this.carPosition.x += this.carVelocity.x * dt
@@ -352,7 +353,10 @@ export class Game {
     if (this.inVehicle && !(this.missionStage === 'deliver' && atTarget)) {
       this.inVehicle = false
       this.playerGroup.visible = true
-      this.playerPosition.set(this.carPosition.x + 1.8, this.groundY(this.carPosition.x + 1.8, this.carPosition.z) + 0.95, this.carPosition.z)
+      this.carVelocity.set(0, 0, 0)
+      this.playerPosition.set(this.carPosition.x + 1.8, 0, this.carPosition.z)
+      this.clampToIsland(this.playerPosition)
+      this.playerPosition.y = this.groundY(this.playerPosition.x, this.playerPosition.z) + 0.95
       this.playerGroup.position.copy(this.playerPosition)
       this.audio.play('ui')
       return
