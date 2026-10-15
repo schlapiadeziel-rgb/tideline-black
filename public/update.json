@@ -1,6 +1,6 @@
 {
   "version": "2.10.0",
   "apkUrl": "https://github.com/schlapiadeziel-rgb/tideline-black/releases/latest/download/tideline-black-latest.apk",
-  "sha256": "b36cc004ffbe3dc23428ae0bca9406e51fffb5f239d8f9872d730175650df585",
+  "sha256": "ef82b4679b4b5be32988563c777c1ee42dde2f3299bf4b02d179567b805950f7",
   "notes": "加入公开版本检测和安全清单解析，保留移动端性能优化与任务存档恢复。"
 }
