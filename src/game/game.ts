@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import type { Audio } from '../engine/audio'
 import type { Input } from '../engine/input'
-import type { Quality } from '../engine/save'
+import type { Quality, SavedGameSession } from '../engine/save'
 import type { Renderer } from '../engine/renderer'
 import { CONFIG } from './config'
 import { tuning } from './tuning'
@@ -144,32 +144,51 @@ export class Game {
     this.updateCamera(0)
   }
 
-  start(tutorial: boolean): void {
+  start(tutorial: boolean, session: SavedGameSession | null = null): void {
     tuning.activate('run')
     this.mode = 'playing'
-    this.missionStage = 'idle'
-    this.inVehicle = false
-    this.playerGroup.visible = true
-    this.playerPosition.set(5, this.groundY(5, 11) + 0.95, 11)
+    this.missionStage = session?.missionStage ?? 'idle'
+    this.inVehicle = session?.inVehicle ?? false
+    this.playerGroup.visible = !this.inVehicle
+    this.playerPosition.set(...(session?.playerPosition ?? [5, this.groundY(5, 11) + 0.95, 11]))
+    this.clampToIsland(this.playerPosition)
+    this.playerPosition.y = this.groundY(this.playerPosition.x, this.playerPosition.z) + 0.95
     this.playerGroup.position.copy(this.playerPosition)
     this.playerVelocity.set(0, 0, 0)
-    this.carPosition.set(13, this.groundY(13, 11) + 0.48, 11)
+    this.carPosition.set(...(session?.carPosition ?? [13, this.groundY(13, 11) + 0.48, 11]))
+    this.clampToIsland(this.carPosition)
+    this.carPosition.y = this.groundY(this.carPosition.x, this.carPosition.z) + 0.48
     this.car.position.copy(this.carPosition)
-    this.car.rotation.y = 0.05
-    this.run = createRun(1)
-    this.yaw = 0.2
-    this.pitch = 0.42
+    this.car.rotation.y = session?.carYaw ?? 0.05
+    this.run = session?.run ?? createRun(1)
+    this.yaw = session?.yaw ?? 0.2
+    this.pitch = session?.pitch ?? 0.42
     this.playerGrounded = true
     this.jumpVelocity = 0
-    this.setMissionMarker('mission', true)
-    this.setMissionMarker('pickup', false)
-    this.setMissionMarker('deliver', false)
+    this.setMissionMarker('mission', this.missionStage === 'idle')
+    this.setMissionMarker('pickup', this.missionStage === 'pickup')
+    this.setMissionMarker('deliver', this.missionStage === 'deliver')
     this.setMissionMarker('complete', false)
     this.setHudVisible(true)
     this.updateCustomHud()
     this.hooks.hint(tutorial ? 'move' : null)
     this.input.endFrame()
     this.input.takeLook()
+  }
+
+  snapshotSession(): SavedGameSession | null {
+    if ((this.mode !== 'playing' && this.mode !== 'paused') || this.run.phase !== 'playing' || this.missionStage === 'complete') return null
+    return {
+      missionStage: this.missionStage,
+      playerPosition: [this.playerPosition.x, this.playerPosition.y, this.playerPosition.z],
+      carPosition: [this.carPosition.x, this.carPosition.y, this.carPosition.z],
+      inVehicle: this.inVehicle,
+      carYaw: this.car.rotation.y,
+      yaw: this.yaw,
+      pitch: this.pitch,
+      run: { ...this.run },
+      savedAt: Date.now(),
+    }
   }
 
   pause(): void {

@@ -2,14 +2,26 @@
  * Versioned local save. Everything the player keeps between sessions lives in one JSON record so
  * it is easy to migrate. Corrupt or foreign data falls back to defaults instead of crashing.
  */
+import type { RunState } from '../game/rules'
+
 export type Locale = 'en' | 'zh-CN'
 export type Quality = 'low' | 'medium' | 'high'
-
 export type ScoreEntry = { name: string; score: number; seconds: number; at: number }
+export type SavedMissionStage = 'idle' | 'pickup' | 'deliver'
+export type SavedGameSession = {
+  missionStage: SavedMissionStage
+  playerPosition: [number, number, number]
+  carPosition: [number, number, number]
+  inVehicle: boolean
+  carYaw: number
+  yaw: number
+  pitch: number
+  run: RunState
+  savedAt: number
+}
 
 export type SaveData = {
-  version: 1
-  /** '' = never chosen; the game follows the browser language until the player picks one. */
+  version: 2
   locale: Locale | ''
   musicVolume: number
   sfxVolume: number
@@ -21,6 +33,7 @@ export type SaveData = {
   tutorialDone: boolean
   playerName: string
   leaderboard: ScoreEntry[]
+  activeSession: SavedGameSession | null
 }
 
 export const SAVE_KEY = 'game3d.save'
@@ -28,7 +41,7 @@ export const LEADERBOARD_SIZE = 10
 
 export function defaultSave(): SaveData {
   return {
-    version: 1,
+    version: 2,
     locale: '',
     musicVolume: 0.7,
     sfxVolume: 0.8,
@@ -40,10 +53,51 @@ export function defaultSave(): SaveData {
     tutorialDone: false,
     playerName: 'PLAYER',
     leaderboard: [],
+    activeSession: null,
   }
 }
 
-const clamp01 = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fallback)
+const clamp01 = (v: unknown, fallback: number) => typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fallback
+const finite = (v: unknown, fallback: number) => typeof v === 'number' && Number.isFinite(v) ? v : fallback
+const vector3 = (value: unknown, fallback: [number, number, number]): [number, number, number] => {
+  if (!Array.isArray(value) || value.length !== 3) return fallback
+  return [finite(value[0], fallback[0]), finite(value[1], fallback[1]), finite(value[2], fallback[2])]
+}
+
+function parseActiveSession(value: unknown): SavedGameSession | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const data = value as Record<string, unknown>
+  if (data.missionStage !== 'idle' && data.missionStage !== 'pickup' && data.missionStage !== 'deliver') return null
+  if (!data.run || typeof data.run !== 'object' || Array.isArray(data.run)) return null
+  const rawRun = data.run as Record<string, unknown>
+  if (rawRun.phase !== 'playing') return null
+  const run: RunState = {
+    unranked: rawRun.unranked === true,
+    phase: 'playing',
+    score: Math.max(0, Math.floor(finite(rawRun.score, 0))),
+    lives: Math.max(0, Math.floor(finite(rawRun.lives, 3))),
+    timeLeft: Math.max(0, finite(rawRun.timeLeft, 150)),
+    elapsed: Math.max(0, finite(rawRun.elapsed, 0)),
+    collected: Math.max(0, Math.floor(finite(rawRun.collected, 0))),
+    total: Math.max(1, Math.floor(finite(rawRun.total, 1))),
+    combo: Math.max(0, Math.floor(finite(rawRun.combo, 0))),
+    comboTimer: Math.max(0, finite(rawRun.comboTimer, 0)),
+    invulnerable: Math.max(0, finite(rawRun.invulnerable, 0)),
+    timeBonus: Math.max(0, Math.floor(finite(rawRun.timeBonus, 0))),
+    lifeBonus: Math.max(0, Math.floor(finite(rawRun.lifeBonus, 0))),
+  }
+  return {
+    missionStage: data.missionStage,
+    playerPosition: vector3(data.playerPosition, [5, 0.95, 11]),
+    carPosition: vector3(data.carPosition, [13, 0.48, 11]),
+    inVehicle: data.inVehicle === true,
+    carYaw: finite(data.carYaw, 0.05),
+    yaw: finite(data.yaw, 0.2),
+    pitch: Math.min(1.12, Math.max(0.18, finite(data.pitch, 0.42))),
+    run,
+    savedAt: Math.max(0, finite(data.savedAt, 0)),
+  }
+}
 
 /** Parse untrusted stored JSON into a valid SaveData (pure; unit tested). */
 export function parseSave(raw: string | null): SaveData {
@@ -57,10 +111,10 @@ export function parseSave(raw: string | null): SaveData {
   } catch {
     return base
   }
-  if (data.version !== 1) return base
+  if (data.version !== 1 && data.version !== 2) return base
   const board = Array.isArray(data.leaderboard) ? data.leaderboard : []
   return {
-    version: 1,
+    version: 2,
     locale: data.locale === 'en' || data.locale === 'zh-CN' ? data.locale : '',
     musicVolume: clamp01(data.musicVolume, base.musicVolume),
     sfxVolume: clamp01(data.sfxVolume, base.sfxVolume),
@@ -75,6 +129,7 @@ export function parseSave(raw: string | null): SaveData {
       .filter((e): e is ScoreEntry => !!e && typeof e === 'object' && typeof (e as ScoreEntry).name === 'string' && Number.isFinite((e as ScoreEntry).score))
       .map(e => ({ name: e.name.slice(0, 16), score: Math.max(0, Math.floor(e.score)), seconds: Number.isFinite(e.seconds) ? e.seconds : 0, at: Number.isFinite(e.at) ? e.at : 0 }))
       .slice(0, LEADERBOARD_SIZE),
+    activeSession: data.version === 2 ? parseActiveSession(data.activeSession) : null,
   }
 }
 

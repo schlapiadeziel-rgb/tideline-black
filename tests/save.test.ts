@@ -19,6 +19,29 @@ describe('save', () => {
     expect(s.playerName).toBe('a very long play')
   })
 
+  it('migrates v1 saves and validates an active session snapshot', () => {
+    const legacy = parseSave(JSON.stringify({ version: 1, locale: 'zh-CN', tutorialDone: true }))
+    expect(legacy.version).toBe(2)
+    expect(legacy.activeSession).toBeNull()
+    const session = parseSave(JSON.stringify({
+      version: 2,
+      activeSession: {
+        missionStage: 'deliver',
+        playerPosition: [4, 1, 8],
+        carPosition: [12, 0.5, 9],
+        inVehicle: true,
+        carYaw: 1,
+        yaw: 0.4,
+        pitch: 0.5,
+        savedAt: 123,
+        run: { phase: 'playing', timeLeft: 80, elapsed: 70, lives: 3, score: 120, collected: 0, total: 1, combo: 0, comboTimer: 0, invulnerable: 0, timeBonus: 0, lifeBonus: 0, unranked: false },
+      },
+    }))
+    expect(session.activeSession?.missionStage).toBe('deliver')
+    expect(session.activeSession?.inVehicle).toBe(true)
+    expect(parseSave(JSON.stringify({ version: 2, activeSession: { missionStage: 'complete' } })).activeSession).toBeNull()
+  })
+
   it('keeps a bounded, ordered leaderboard', () => {
     let board = [] as ReturnType<typeof defaultSave>['leaderboard']
     for (let i = 0; i < LEADERBOARD_SIZE + 3; i += 1) board = insertScore(board, { name: `p${i}`, score: i * 10, seconds: 60, at: i }).board

@@ -27,11 +27,12 @@ async function boot(): Promise<void> {
     if (game) game.reducedMotion = d.reducedMotion
   }
 
-  const startRun = (tutorial: boolean) => {
+  const startRun = (tutorial: boolean, resumeSaved = false) => {
     if (!game) return
     audio.unlock()
     audio.startMusic()
-    game.start(tutorial)
+    game.start(tutorial, resumeSaved ? save.data.activeSession : null)
+    save.update({ activeSession: null })
     ui.show('hud')
     loop.resetAccumulator()
     input.lockPointer()
@@ -39,6 +40,7 @@ async function boot(): Promise<void> {
   const pause = () => {
     if (game?.mode !== 'playing') return
     game.pause()
+    save.update({ activeSession: game.snapshotSession() })
     ui.show('pause')
     input.unlockPointer()
   }
@@ -51,10 +53,11 @@ async function boot(): Promise<void> {
   }
 
   const ui = new Ui(i18n, save, audio, input, {
-    play: () => startRun(!save.data.tutorialDone),
+    play: () => startRun(!save.data.tutorialDone, true),
     restart: () => startRun(false),
     resume,
     quit: () => {
+      if (game?.mode === 'paused' || game?.mode === 'playing') save.update({ activeSession: game.snapshotSession() })
       game?.toTitle()
       ui.show('title')
       input.unlockPointer()
@@ -94,6 +97,7 @@ async function boot(): Promise<void> {
     hint: hint => ui.hint(hint),
     tutorialDone: () => save.update({ tutorialDone: true }),
     end: run => {
+      save.update({ activeSession: null })
       input.unlockPointer()
       window.setTimeout(() => ui.showResults(run), run.phase === 'won' ? 1400 : 900)
     },
@@ -106,6 +110,7 @@ async function boot(): Promise<void> {
     await registerGameTuning(tuning)
   }
   const g = game
+  let autosaveTimer = 0
 
   const loop = new GameLoop({
     step: dt => g.step(dt),
@@ -118,6 +123,15 @@ async function boot(): Promise<void> {
       ui.frame(frameSeconds)
       loop.paused = g.mode === 'paused'
       g.render(alpha, frameSeconds)
+      if (g.mode === 'playing') {
+        autosaveTimer += frameSeconds
+        if (autosaveTimer >= 2) {
+          autosaveTimer = 0
+          save.update({ activeSession: g.snapshotSession() })
+        }
+      } else {
+        autosaveTimer = 0
+      }
       if (g.mode === 'playing' || g.mode === 'ended') ui.updateHud(g.run, g.compass())
     },
   })
