@@ -81,6 +81,7 @@ export class Game {
   private readonly playerPosition = new THREE.Vector3(5, 0.95, 11)
   private readonly playerVelocity = new THREE.Vector3()
   private readonly npcLook = new THREE.Vector3()
+  private readonly npcDelta = new THREE.Vector3()
   private readonly carPosition = new THREE.Vector3(13, 0.48, 11)
   private readonly carVelocity = new THREE.Vector3()
   private readonly focus = new THREE.Vector3()
@@ -420,6 +421,7 @@ export class Game {
   }
 
   private animateActors(dt: number): void {
+    const observerPosition = this.inVehicle ? this.carPosition : this.playerPosition
     for (const npc of this.npcs) {
       npc.phase += dt * npc.speed
       if (npc.path.length > 1) {
@@ -427,22 +429,22 @@ export class Game {
           npc.pause -= dt
         } else {
           const target = npc.path[npc.waypoint]
-          const delta = target.clone().sub(npc.root.position)
-          delta.y = 0
-          if (delta.lengthSq() < 0.05) {
+          this.npcDelta.copy(target).sub(npc.root.position)
+          this.npcDelta.y = 0
+          if (this.npcDelta.lengthSq() < 0.05) {
             npc.waypoint = (npc.waypoint + 1) % npc.path.length
             npc.pause = 0.9
           } else {
-            delta.normalize()
-            npc.root.position.addScaledVector(delta, npc.speed * dt)
-            const desiredYaw = Math.atan2(delta.x, delta.z)
+            this.npcDelta.normalize()
+            npc.root.position.addScaledVector(this.npcDelta, npc.speed * dt)
+            const desiredYaw = Math.atan2(this.npcDelta.x, this.npcDelta.z)
             npc.root.rotation.y = THREE.MathUtils.lerp(npc.root.rotation.y, desiredYaw, 1 - Math.exp(-dt * 7))
           }
         }
       }
       npc.root.position.y = npc.base.y + Math.sin(npc.phase) * 0.06
       if (npc.path.length <= 1) npc.root.rotation.y += dt * 0.18
-      this.npcLook.copy(this.playerPosition).sub(npc.root.position)
+      this.npcLook.copy(observerPosition).sub(npc.root.position)
       this.npcLook.y = 0
       const nearPlayer = this.npcLook.lengthSq() < 36
       const lookYaw = nearPlayer ? THREE.MathUtils.clamp(Math.atan2(this.npcLook.x, this.npcLook.z) - npc.root.rotation.y, -0.9, 0.9) : 0
