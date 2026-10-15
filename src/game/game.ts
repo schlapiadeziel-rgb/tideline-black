@@ -83,6 +83,14 @@ export class Game {
   private readonly npcLook = new THREE.Vector3()
   private readonly npcDelta = new THREE.Vector3()
   private readonly driveDirection = new THREE.Vector3()
+  private readonly walkForward = new THREE.Vector3()
+  private readonly walkRight = new THREE.Vector3()
+  private readonly walkDesired = new THREE.Vector3()
+  private readonly cameraDesired = new THREE.Vector3()
+  private readonly cameraFocusTarget = new THREE.Vector3()
+  private readonly cameraVelocityDirection = new THREE.Vector3()
+  private readonly routeDirection = new THREE.Vector3()
+  private readonly routeUp = new THREE.Vector3(0, 1, 0)
   private readonly carPosition = new THREE.Vector3(13, 0.48, 11)
   private readonly carVelocity = new THREE.Vector3()
   private readonly focus = new THREE.Vector3()
@@ -313,9 +321,10 @@ export class Game {
 
   private walk(dt: number, _jumpPressed: boolean, dashPressed: boolean): void {
     const move = this.input.move
-    const forward = new THREE.Vector3(Math.sin(this.yaw), 0, -Math.cos(this.yaw))
-    const right = new THREE.Vector3(Math.cos(this.yaw), 0, Math.sin(this.yaw))
-    const desired = forward.multiplyScalar(move.y).add(right.multiplyScalar(move.x))
+    this.walkForward.set(Math.sin(this.yaw), 0, -Math.cos(this.yaw))
+    this.walkRight.set(Math.cos(this.yaw), 0, Math.sin(this.yaw))
+    this.walkDesired.copy(this.walkForward).multiplyScalar(move.y).addScaledVector(this.walkRight, move.x)
+    const desired = this.walkDesired
     if (desired.lengthSq() > 1) desired.normalize()
     const speed = this.input.held('sprint') ? CONFIG.player.sprintSpeed : CONFIG.player.walkSpeed
     if (dashPressed && desired.lengthSq() > 0) {
@@ -424,14 +433,14 @@ export class Game {
     const height = this.inVehicle ? 3.1 : CONFIG.camera.height + 0.9
     const speed = this.inVehicle ? Math.min(1, this.carVelocity.length() / 18) : Math.min(1, this.playerVelocity.length() / CONFIG.player.sprintSpeed)
     const horizontal = Math.cos(this.pitch) * distance
-    const desired = new THREE.Vector3(
+    const desired = this.cameraDesired.set(
       target.x - Math.sin(this.yaw) * horizontal,
       target.y + height + Math.sin(this.pitch) * distance,
       target.z + Math.cos(this.yaw) * horizontal,
     )
     this.camera.position.lerp(desired, 1 - Math.exp(-Math.max(dt, 0.016) * 8))
-    const focusTarget = new THREE.Vector3(target.x, target.y + 1.2 + speed * 0.12, target.z)
-    if (this.inVehicle && this.carVelocity.lengthSq() > 0.1) focusTarget.add(this.carVelocity.clone().normalize().multiplyScalar(1.4 + speed * 1.4))
+    const focusTarget = this.cameraFocusTarget.set(target.x, target.y + 1.2 + speed * 0.12, target.z)
+    if (this.inVehicle && this.carVelocity.lengthSq() > 0.1) focusTarget.add(this.cameraVelocityDirection.copy(this.carVelocity).normalize().multiplyScalar(1.4 + speed * 1.4))
     this.focus.lerp(focusTarget, 1 - Math.exp(-Math.max(dt, 0.016) * 10))
     this.camera.lookAt(this.focus)
     const targetFov = CONFIG.camera.fov + (this.inVehicle ? speed * 9 : speed * 2)
@@ -1246,20 +1255,20 @@ export class Game {
     }
     const target = this.missionTargets[this.missionStage]
     const origin = this.inVehicle ? this.carPosition : this.playerPosition
-    const delta = new THREE.Vector3(target.x - origin.x, 0, target.z - origin.z)
-    const distance = delta.length()
+    const direction = this.routeDirection.set(target.x - origin.x, 0, target.z - origin.z)
+    const distance = direction.length()
     if (distance < 5) {
       this.routeGuides.visible = false
       return
     }
     this.routeGuides.visible = true
-    const direction = delta.normalize()
+    direction.normalize()
     const spacing = Math.min(6.5, Math.max(3.2, distance / 8))
     for (const arrow of this.routeGuides.children) {
       const index = arrow.userData.routeIndex as number
       const offset = Math.min(distance - 2, 4 + index * spacing)
       arrow.position.set(origin.x + direction.x * offset, 0.22, origin.z + direction.z * offset)
-      arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction)
+      arrow.quaternion.setFromUnitVectors(this.routeUp, direction)
       arrow.visible = offset < distance - 1
       arrow.scale.setScalar(0.86 + Math.sin(this.time * 4 + index) * 0.08)
     }

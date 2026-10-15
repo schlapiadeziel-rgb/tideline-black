@@ -2,7 +2,7 @@
 // Serves dist/, boots the game in headless Chromium, plays a few seconds, walks the menus in
 // English and Chinese, fails on any console error, and writes screenshots to ./shots/.
 import { spawn } from 'node:child_process'
-import { mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { chromium } from 'playwright'
 
 const port = 4300 + Math.floor(Math.random() * 500)
@@ -67,9 +67,12 @@ const state = page => page.evaluate(() => {
 
 try {
   await waitForServer()
-  // Prefer Playwright's bundled Chromium; fall back to an installed Google Chrome.
+  // Prefer Playwright's bundled Chromium; fall back to installed Chromium/Chrome.
   const args = ['--ignore-gpu-blocklist']
-  browser = await chromium.launch({ args }).catch(() => chromium.launch({ args, channel: 'chrome' }))
+  const installedBrowser = process.env.CHROME_BIN ?? (existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined)
+  browser = await chromium.launch({ args }).catch(() => installedBrowser
+    ? chromium.launch({ args, executablePath: installedBrowser })
+    : chromium.launch({ args, channel: 'chrome' }))
   const errors = []
 
   const en = await browser.newContext({ viewport: { width: 1280, height: 720 }, locale: 'en-US' })
